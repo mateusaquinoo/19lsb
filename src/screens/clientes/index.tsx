@@ -40,6 +40,9 @@ export default function Feed() {
             tempoContrato,
             servicos: selectedServicos, // Mantendo como array
             valor,
+            relatorios: [],
+            briefing: [],
+            id: ''
         };
         const addedClient = await addClient(newClient);
         setClientes([...clientes, addedClient]);

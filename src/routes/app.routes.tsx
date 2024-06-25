@@ -11,6 +11,7 @@ import VisualizarArquivo from "../screens/visualizarArquivo";
 import RelatoriosCliente from "../screens/relatorios";
 import Calendario from "../screens/calendario";
 import Avisos from "../screens/avisos";
+import DemandasScreen from "../screens/demandasCliente";
 
 const { Navigator, Screen } = createNativeStackNavigator();
 
@@ -86,6 +87,12 @@ export function AppRoutes() {
             <Screen 
             name="Avisos"
             component={Avisos}
+            options={{ headerShown: false }} 
+            />
+
+            <Screen 
+            name="Demanda"
+            component={DemandasScreen}
             options={{ headerShown: false }} 
             />
         </Navigator>

@@ -10,9 +10,11 @@ export declare global {
             BriefingCliente: { cliente: ClientDTO };
             ServicosCliente: { cliente: ClientDTO }; 
             RelatoriosCliente: { cliente: ClientDTO };
+            Demanda: { cliente: ClientDTO };
             VisualizarArquivo: { uri: string; tipo: string };
             Calendario: undefined;
             Avisos: undefined;  // Adicione esta linha
+            
         }
     }
 }

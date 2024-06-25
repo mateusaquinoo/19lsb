@@ -81,6 +81,8 @@ export default function ClienteDetalhes() {
                                 navigation.navigate('BriefingCliente', { cliente });
                             } else if (item === 'Relatórios') {
                                 navigation.navigate('RelatoriosCliente', { cliente });
+                            } else if (item === 'Demandas') {
+                                navigation.navigate('Demanda', { cliente });
                             }
                         }}
                     >
