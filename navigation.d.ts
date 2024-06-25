@@ -12,8 +12,7 @@ export declare global {
             RelatoriosCliente: { cliente: ClientDTO };
             VisualizarArquivo: { uri: string; tipo: string };
             Calendario: undefined;
+            Avisos: undefined;  // Adicione esta linha
         }
     }
 }
-
-

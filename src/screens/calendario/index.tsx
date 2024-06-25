@@ -9,6 +9,8 @@ import { getDocs, collection } from 'firebase/firestore';
 import { db } from '../../../config/firebase';
 import { addEvento, getEventos } from '../../../firestore/Calendario/eventoController';
 import { EventoDTO } from '../../../firestore/Calendario/eventoDTO';
+import { addAviso } from '../../../firestore/Avisos/avisoController';
+import { AvisoDTO } from '../../../firestore/Avisos/avisoDTO';
 
 export default function Calendario() {
     const navigation = useNavigation();
@@ -78,6 +80,18 @@ export default function Calendario() {
         });
 
         setAllEvents([...allEvents, newEvent]);
+
+        const newAviso: AvisoDTO = {
+            title,
+            employeeId: employee,
+            date: selectedDate,
+            time,
+            createdAt: new Date(),
+            client: clients.find(c => c.id === client)?.nome || '',
+        };
+
+        await addAviso(newAviso);
+
         setTitle('');
         setClient('');
         setEmployee('');

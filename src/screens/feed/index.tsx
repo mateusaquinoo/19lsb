@@ -307,6 +307,7 @@ export default function Feed() {
                             borderRadius: 10,
                             backgroundColor: "#BDBCBB",
                         }}
+                        onPress={() => navigation.navigate("Avisos")}
                     >
                         <View
                             style={{

@@ -10,6 +10,7 @@ import BriefingCliente from "../screens/breafing";
 import VisualizarArquivo from "../screens/visualizarArquivo";
 import RelatoriosCliente from "../screens/relatorios";
 import Calendario from "../screens/calendario";
+import Avisos from "../screens/avisos";
 
 const { Navigator, Screen } = createNativeStackNavigator();
 
@@ -82,6 +83,11 @@ export function AppRoutes() {
             options={{ headerShown: false }} 
             />
 
+            <Screen 
+            name="Avisos"
+            component={Avisos}
+            options={{ headerShown: false }} 
+            />
         </Navigator>
     );
 }
