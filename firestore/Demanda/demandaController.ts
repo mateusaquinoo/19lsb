@@ -1,4 +1,4 @@
-import { collection, addDoc, getDocs, query, where } from 'firebase/firestore';
+import { collection, addDoc, getDocs, query, where, doc, updateDoc } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 import { DemandaDTO } from './demandaDTO';
 
@@ -38,6 +38,11 @@ export const getDemandasByResponsavel = async (responsavelId: string): Promise<D
         console.error("Error fetching demandas: ", error);
         throw error;
     }
+};
+
+export const updateDemanda = async (id: string, demanda: Partial<DemandaDTO>): Promise<void> => {
+    const demandaDoc = doc(db, 'demandas', id);
+    await updateDoc(demandaDoc, demanda);
 };
 
 

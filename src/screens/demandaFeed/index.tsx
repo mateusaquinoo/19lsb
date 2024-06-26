@@ -52,6 +52,7 @@ export default function DemandasFeed() {
                         )}
                     </View>
                 )}
+                showsVerticalScrollIndicator={false}
             />
         </View>
     );
