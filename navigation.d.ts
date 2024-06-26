@@ -15,6 +15,7 @@ export declare global {
             Calendario: undefined;
             Avisos: undefined;
             DemandasFeed: undefined; // Adicione esta linha
+            Ponto: undefined; // Adicionei esta linha
         }
     }
 }
