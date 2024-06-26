@@ -72,7 +72,7 @@ export default function DemandaCliente() {
             responsavel: user?.uid?? '',
             clienteId: cliente.id,
             arquivoUri,
-            createdAt: new Date(),
+            createdAt: new Date().toISOString(),
         };
 
         if (isEditing && editingId) {
@@ -171,7 +171,7 @@ export default function DemandaCliente() {
         setHora(demanda.hora);
         setDescricao(demanda.descricao);
         setResponsavel({ nome: funcionarios.find(f => f.id === demanda.responsavel)?.nome || '', id: demanda.responsavel });
-        setArquivoUri(demanda.arquivoUri?? '');
+        setArquivoUri(demanda.arquivoUri ?? '');
         setIsEditing(true);
         setEditingId(demanda.id ?? null);
         modalizeRef.current?.open();
@@ -212,7 +212,7 @@ export default function DemandaCliente() {
                                     <Text style={{ color: '#fff' }}>Ver Arquivo</Text>
                                 </TouchableOpacity>
                             )}
-                            <TouchableOpacity onPress={() => handleEditDemanda(item)} style={{ marginRight: 10, marginTop: 10,}}>
+                            <TouchableOpacity onPress={() => handleEditDemanda(item)} style={{ marginRight: 10, marginTop: 10 }}>
                                 <Text style={{ color: '#007bff' }}>Editar</Text>
                             </TouchableOpacity>
                         </View>

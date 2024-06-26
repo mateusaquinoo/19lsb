@@ -7,5 +7,5 @@ export interface DemandaDTO {
     responsavel: string;
     clienteId: string;
     arquivoUri?: string;
-    createdAt: Date;
+    createdAt: string;
 }

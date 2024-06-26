@@ -53,6 +53,7 @@ export default function DemandasFeed() {
                         <Text style={styles.demandaDetails}>Data: {item.data}</Text>
                         <Text style={styles.demandaDetails}>Hora: {item.hora}</Text>
                         <Text style={styles.demandaDetails}>Descrição: {item.descricao}</Text>
+                        <Text style={{ fontSize: 16, color: '#555', marginTop: 10 }}>Criado em: {new Date(item.createdAt).toLocaleDateString()}</Text>
                         {item.arquivoUri && (
                             <TouchableOpacity
                                 onPress={() => navigation.navigate('VisualizarArquivo', { uri: item.arquivoUri ?? '', tipo: 'application/pdf' })}

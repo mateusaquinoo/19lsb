@@ -11,6 +11,7 @@ export declare global {
             ServicosCliente: { cliente: ClientDTO }; 
             RelatoriosCliente: { cliente: ClientDTO };
             Demanda: { cliente: ClientDTO };
+            ReuniaoCliente: { cliente: ClientDTO };
             VisualizarArquivo: { uri: string; tipo: string };
             Calendario: undefined;
             Avisos: undefined;

@@ -83,7 +83,10 @@ export default function ClienteDetalhes() {
                                 navigation.navigate('RelatoriosCliente', { cliente });
                             } else if (item === 'Demandas') {
                                 navigation.navigate('Demanda', { cliente });
+                            } else if (item === 'Reuniões') {
+                                navigation.navigate('ReuniaoCliente', { cliente });
                             }
+
                         }}
                     >
                         <View
