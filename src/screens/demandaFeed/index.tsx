@@ -5,11 +5,13 @@ import { useAuth } from '../../auth/AuthProvider';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { DemandaDTO } from '../../../firestore/Demanda/demandaDTO';
 import { getDemandasByResponsavel } from '../../../firestore/Demanda/demandaController';
+import { getClients } from '../../../firestore/Cliente/clienteController'; // Importe a função para obter os clientes
 
 export default function DemandasFeed() {
     const navigation = useNavigation();
     const { user } = useAuth();
     const [demandas, setDemandas] = useState<DemandaDTO[]>([]);
+    const [clientes, setClientes] = useState<{ [key: string]: string }>({}); // Objeto para armazenar os nomes dos clientes
 
     useEffect(() => {
         const fetchDemandas = async () => {
@@ -18,6 +20,14 @@ export default function DemandasFeed() {
                 const demandasList = await getDemandasByResponsavel(user.uid);
                 console.log('Demandas:', demandasList);
                 setDemandas(demandasList);
+
+                // Fetch clientes e mapeie os nomes dos clientes pelos seus IDs
+                const clientesList = await getClients();
+                const clientesMap: { [key: string]: string } = {};
+                clientesList.forEach(cliente => {
+                    clientesMap[cliente.id] = cliente.nome;
+                });
+                setClientes(clientesMap);
             }
         };
 
@@ -39,6 +49,7 @@ export default function DemandasFeed() {
                 renderItem={({ item }) => (
                     <View style={styles.demandaContainer}>
                         <Text style={styles.demandaTitle}>Título: {item.titulo}</Text>
+                        <Text style={styles.demandaTitle}>Cliente: {clientes[item.clienteId]}</Text>
                         <Text style={styles.demandaDetails}>Data: {item.data}</Text>
                         <Text style={styles.demandaDetails}>Hora: {item.hora}</Text>
                         <Text style={styles.demandaDetails}>Descrição: {item.descricao}</Text>
