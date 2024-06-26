@@ -13,8 +13,8 @@ export declare global {
             Demanda: { cliente: ClientDTO };
             VisualizarArquivo: { uri: string; tipo: string };
             Calendario: undefined;
-            Avisos: undefined;  // Adicione esta linha
-            
+            Avisos: undefined;
+            DemandasFeed: undefined; // Adicione esta linha
         }
     }
 }

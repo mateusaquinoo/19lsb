@@ -42,7 +42,8 @@ export default function Feed() {
             valor,
             relatorios: [],
             briefing: [],
-            id: ''
+            id: '',
+            demandas: []
         };
         const addedClient = await addClient(newClient);
         setClientes([...clientes, addedClient]);

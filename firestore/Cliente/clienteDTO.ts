@@ -1,3 +1,5 @@
+
+
 export interface ClientDTO {
     demandas: never[];
     relatorios: never[];
@@ -9,6 +11,7 @@ export interface ClientDTO {
     servicos: string[];
     valor: string;
     acessos?: Acesso[];
+    
 }
 
 interface Acesso {

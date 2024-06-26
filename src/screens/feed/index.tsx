@@ -366,6 +366,7 @@ export default function Feed() {
                             borderRadius: 10,
                             backgroundColor: "#BDBCBB",
                         }}
+                        onPress={() => navigation.navigate("DemandasFeed")}
                     >
                         <View
                             style={{

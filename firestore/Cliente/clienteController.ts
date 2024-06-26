@@ -1,7 +1,7 @@
+// firestore/Cliente/clienteController.ts
 import { collection, addDoc, getDocs } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 import { ClientDTO } from './clienteDTO';
-
 
 const clientsCollection = collection(db, 'clientes');
 

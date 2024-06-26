@@ -12,6 +12,8 @@ import RelatoriosCliente from "../screens/relatorios";
 import Calendario from "../screens/calendario";
 import Avisos from "../screens/avisos";
 import DemandasScreen from "../screens/demandasCliente";
+import DemandasFeed from "../screens/demandaFeed";
+import DemandasCliente from "../screens/demandasCliente";
 
 const { Navigator, Screen } = createNativeStackNavigator();
 
@@ -92,7 +94,13 @@ export function AppRoutes() {
 
             <Screen 
             name="Demanda"
-            component={DemandasScreen}
+            component={DemandasCliente}
+            options={{ headerShown: false }} 
+            />
+
+            <Screen 
+            name="DemandasFeed"
+            component={DemandasFeed}
             options={{ headerShown: false }} 
             />
         </Navigator>

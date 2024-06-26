@@ -1,7 +1,6 @@
-import { ReactNode } from "react";
 
 export interface EventoDTO {
-    time: ReactNode;
+    time: string;
     id?: string;
     title: string;
     client: string;
