@@ -1,5 +1,7 @@
 // firestore/Avisos/avisoDTO.ts
 export interface AvisoDTO {
+    status: boolean;
+    completed: boolean;
     id?: string;
     title: string;
     employeeId: string;

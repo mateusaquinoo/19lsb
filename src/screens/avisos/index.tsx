@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, FlatList, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { getAvisosByEmployee } from '../../../firestore/Avisos/avisoController';
+import { getAvisosByEmployee, updateAvisoStatus } from '../../../firestore/Avisos/avisoController';
 import { AvisoDTO } from '../../../firestore/Avisos/avisoDTO';
 import { useAuth } from '../../auth/AuthProvider';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -14,13 +14,26 @@ export default function Avisos() {
     useEffect(() => {
         const fetchAvisos = async () => {
             if (user) {
-                const avisosList = await getAvisosByEmployee(user.uid);
+                const avisosList: AvisoDTO[] = await getAvisosByEmployee(user.uid);
                 setAvisos(avisosList);
             }
         };
 
         fetchAvisos();
     }, [user]);
+
+    const handleConcluirAviso = async (avisoId: string) => {
+        try {
+            await updateAvisoStatus(avisoId, true); // Marcar como concluído
+            setAvisos(prevAvisos => prevAvisos.map(aviso => 
+                aviso.id === avisoId ? { ...aviso, completed: true } : aviso
+            ));
+            Alert.alert('Sucesso', 'Aviso marcado como concluído.');
+        } catch (error) {
+            console.error("Erro ao marcar aviso como concluído:", error);
+            Alert.alert('Erro', 'Não foi possível marcar o aviso como concluído.');
+        }
+    };
 
     return (
         <View style={styles.container}>
@@ -40,8 +53,17 @@ export default function Avisos() {
                         <Text style={styles.avisoDetails}>Cliente: {item.client}</Text>
                         <Text style={styles.avisoDetails}>Data: {item.date}</Text>
                         <Text style={styles.avisoDetails}>Hora: {item.time}</Text>
+                        {!item.completed && (
+                            <TouchableOpacity
+                                onPress={() => handleConcluirAviso(item.id??'')}
+                                style={styles.concluirButton}
+                            >
+                                <Text style={styles.concluirButtonText}>Concluir</Text>
+                            </TouchableOpacity>
+                        )}
                     </View>
                 )}
+                showsVerticalScrollIndicator={false}
             />
         </View>
     );
@@ -92,5 +114,16 @@ const styles = StyleSheet.create({
     avisoDetails: {
         fontSize: 16,
         color: '#555',
+    },
+    concluirButton: {
+        marginTop: 10,
+        backgroundColor: '#40FF01',
+        padding: 10,
+        borderRadius: 5,
+        alignItems: 'center',
+    },
+    concluirButtonText: {
+        color: '#fff',
+        fontWeight: 'bold',
     },
 });

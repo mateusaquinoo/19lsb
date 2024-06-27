@@ -1,17 +1,16 @@
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import React, { useState, useEffect, useRef, ReactElement, JSXElementConstructor } from 'react';
-import { Text, TouchableOpacity, View, Dimensions, TextInput, FlatList, Switch } from 'react-native';
+import { Text, TouchableOpacity, View, Dimensions, TextInput, FlatList } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Modalize } from 'react-native-modalize';
 import { ClientDTO } from '../../../firestore/Cliente/clienteDTO';
 import { addClient, getClients } from '../../../firestore/Cliente/clienteController';
-import { ServicoDTO } from '../../../firestore/Servicos/servicosDTO';
-import { getServicos } from '../../../firestore/Servicos/servicoController';
 
 export default function Cliente() {
     const navigation = useNavigation();
     const modalizeRef = useRef<Modalize>(null);
     const serviceModalizeRef = useRef<Modalize>(null);
+    const contractPickerRef = useRef<Modalize>(null);
     const [clientes, setClientes] = useState<ClientDTO[]>([]);
     const [nome, setNome] = useState('');
     const [dataEntrada, setDataEntrada] = useState('');
@@ -34,6 +33,10 @@ export default function Cliente() {
 
     const openServiceModal = () => {
         serviceModalizeRef.current?.open();
+    };
+
+    const openContractPicker = () => {
+        contractPickerRef.current?.open();
     };
 
     const handleAddService = () => {
@@ -62,6 +65,11 @@ export default function Cliente() {
         setServicos([]);
         setValor('');
         modalizeRef.current?.close();
+    };
+
+    const handleSelectContractTime = (time: string) => {
+        setTempoContrato(time);
+        contractPickerRef.current?.close();
     };
 
     const renderButton = (cliente: ClientDTO, index: number) => (
@@ -204,17 +212,20 @@ export default function Cliente() {
                         borderRadius: 5
                     }}
                 />
-                <TextInput
-                    placeholder="Tempo de Contrato"
-                    value={tempoContrato}
-                    onChangeText={setTempoContrato}
-                    style={{ 
-                        borderWidth: 1,
-                        marginBottom: 10,
-                        padding: 10,
-                        borderRadius: 5
-                    }}
-                />
+                <TouchableOpacity onPress={openContractPicker} style={{ 
+                    borderWidth: 1, 
+                    borderColor: '#40FF01', 
+                    padding: 10, 
+                    borderRadius: 5, 
+                    justifyContent: 'center', 
+                    alignItems: 'center', 
+                    marginBottom: 10, 
+                    backgroundColor: '#f0f0f0' 
+                }}>
+                    <Text style={{ color: '#555' }}>
+                        {tempoContrato || 'Selecione o Tempo de Contrato'}
+                    </Text>
+                </TouchableOpacity>
                 <TextInput
                     placeholder="Valor a Pagar"
                     value={valor}
@@ -226,8 +237,8 @@ export default function Cliente() {
                         borderRadius: 5
                     }}
                 />
-                <TouchableOpacity onPress={openServiceModal} style={{ backgroundColor: '#40FF01', padding: 15, borderRadius: 10, marginBottom: 20 }}>
-                    <Text style={{ textAlign: 'center', color: '#fff', fontWeight: 'bold' }}>Adicionar Serviços</Text>
+                <TouchableOpacity onPress={openServiceModal} style={{ backgroundColor: '#f0f0f0', padding: 15, borderRadius: 10, marginBottom: 20, borderColor: '#40FF01', borderWidth:1}}>
+                    <Text style={{ textAlign: 'center', color: '#000', fontWeight: 'bold' }}>Adicionar Serviços</Text>
                 </TouchableOpacity>
                 <FlatList
                     data={servicos}
@@ -266,6 +277,62 @@ export default function Cliente() {
                 </TouchableOpacity>
             </View>
         </Modalize>
+
+        <Modalize
+            ref={contractPickerRef}
+            adjustToContentHeight
+        >
+            <View style={{ padding: 20 }}>
+                <TouchableOpacity onPress={() => handleSelectContractTime('3 meses')} style={{
+                borderWidth: 1,
+                borderColor: '#40FF01',
+                padding: 10,
+                borderRadius: 5,
+                justifyContent: 'center',
+                alignItems: 'center',
+                marginBottom: 10,
+                backgroundColor: '#f0f0f0',
+            }}>
+                    <Text style={{
+                        fontSize: 18,
+                        color: '#000',
+                    }}>3 meses</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => handleSelectContractTime('6 meses')} style={
+                    {
+                        borderWidth: 1,
+                        borderColor: '#40FF01',
+                        padding: 10,
+                        borderRadius: 5,
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        marginBottom: 10,
+                        backgroundColor: '#f0f0f0',
+                    }}>
+                    <Text style={{
+                        fontSize: 18,
+                        color: '#000',
+                    }}>6 meses</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => handleSelectContractTime('12 meses')} style={
+                    {
+                        borderWidth: 1,
+                        borderColor: '#40FF01',
+                        padding: 10,
+                        borderRadius: 5,
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        marginBottom: 10,
+                        backgroundColor: '#f0f0f0',
+                    }}>
+                    <Text style={{
+                        fontSize: 18,
+                        color: '#000',
+                    }}>12 meses</Text>
+                </TouchableOpacity>
+            </View>
+        </Modalize>
         </View>
     );
 }
+

@@ -1,5 +1,5 @@
 // firestore/Cliente/clienteController.ts
-import { collection, addDoc, getDocs } from 'firebase/firestore';
+import { collection, addDoc, getDocs, doc, updateDoc } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 import { ClientDTO } from './clienteDTO';
 
@@ -20,7 +20,7 @@ export const getClients = async () => {
     const snapshot = await getDocs(clientsCollection);
     const clients: ClientDTO[] = [];
     snapshot.forEach(doc => {
-      clients.push({ id: doc.id, ...doc.data() } as ClientDTO);
+      clients.push({ id: doc.id, ...doc.data() } as unknown as ClientDTO);
     });
     return clients;
   } catch (error) {
@@ -28,3 +28,6 @@ export const getClients = async () => {
     throw error;
   }
 };
+
+
+

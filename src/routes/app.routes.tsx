@@ -15,6 +15,7 @@ import DemandasFeed from "../screens/demandaFeed";
 import DemandasCliente from "../screens/demandasCliente";
 import Ponto from "../screens/ponto";
 import ReuniaoCliente from "../screens/reuniao";
+import GerenciarAvisos from "../screens/controleAvisos";
 
 const { Navigator, Screen } = createNativeStackNavigator();
 
@@ -90,6 +91,12 @@ export function AppRoutes() {
             <Screen 
             name="Demanda"
             component={DemandasCliente}
+            options={{ headerShown: false }} 
+            />
+
+            <Screen 
+            name="GerenciarAvisos"
+            component={GerenciarAvisos}
             options={{ headerShown: false }} 
             />
 

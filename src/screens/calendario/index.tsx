@@ -89,6 +89,8 @@ export default function Calendario() {
             time,
             createdAt: new Date(),
             client: clients.find(c => c.id === selectedClient)?.nome || '',
+            status: false,
+            completed: false
         };
 
         await addAviso(newAviso);
