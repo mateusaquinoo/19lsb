@@ -1,6 +1,6 @@
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import React, { useState, useEffect, useRef, ReactElement, JSXElementConstructor } from 'react';
-import { Text, TouchableOpacity, View, Dimensions, TextInput, FlatList } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { Text, TouchableOpacity, View, Dimensions, TextInput, ScrollView, StyleSheet } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Modalize } from 'react-native-modalize';
 import { ClientDTO } from '../../../firestore/Cliente/clienteDTO';
@@ -55,7 +55,8 @@ export default function Cliente() {
             relatorios: [],
             briefing: [],
             demandas: [],
-            reuniao: []
+            reuniao: [],
+            
         };
         const addedClient = await addClient(newClient);
         setClientes([...clientes, addedClient]);
@@ -75,48 +76,13 @@ export default function Cliente() {
     const renderButton = (cliente: ClientDTO, index: number) => (
         <TouchableOpacity
             key={index}
-            style={{
-                display: "flex",
-                flexDirection: "row",
-                alignItems: "center",
-                justifyContent: "space-between",
-                width: Dimensions.get("window").width / 2 - 30,
-                borderRadius: 10,
-                backgroundColor: "#BDBCBB",
-                marginVertical: 10,
-            }}
+            style={styles.buttonContainer}
             onPress={() => navigation.navigate('ClienteDetalhes', { cliente })}
         >
-            <View
-                style={{
-                    paddingVertical: 20,
-                    paddingHorizontal: 20,
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    flexDirection: "row",
-                    width: "100%",
-                }}
-            >
-                <View
-                    style={{
-                        display: "flex",
-                        flexDirection: "row",
-                        alignItems: "center",
-                    }}
-                >
+            <View style={styles.buttonContent}>
+                <View style={styles.buttonInnerContent}>
                     <MaterialCommunityIcons name="clipboard-account-outline" size={24} color="#40FF01" />
-                    <Text
-                        style={{
-                            marginLeft: 10,
-                            fontSize: 16,
-                            fontWeight: "bold",
-                            color: "#000",
-                            height: 24,
-                        }}
-                    >
-                        {cliente.nome}
-                    </Text>
+                    <Text style={styles.buttonText}>{cliente.nome}</Text>
                 </View>
                 <Ionicons name="chevron-forward" size={14} color="#000" />
             </View>
@@ -124,215 +90,214 @@ export default function Cliente() {
     );
 
     return (
-        <View style={{
-            flex: 1,
-            paddingHorizontal: 20,
-            paddingVertical: 80,
-            flexWrap: "wrap",
-        }}>
-        
-        <View
-            style={{
-                display: "flex",
-                flexDirection: "row",
-                justifyContent: "space-between",
-                alignItems: "center",
-            }}
-        >
-            <TouchableOpacity
-                onPress={() => navigation.goBack()}
-                style={{
-                    display: "flex",
-                    flexDirection: "row",
-                    alignItems: "center",
-                }}
-            >
-                <MaterialCommunityIcons name="arrow-left" size={24} color="#40FF01" />
-                <Text
-                    style={{
-                        marginLeft: 10,
-                        fontSize: 24,
-                        fontWeight: "bold",
-                        color: "#000",
-                    }}
-                >
-                    Menu
-                </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-                onPress={openModal}
-                style={{
-                    display: "flex",
-                    flexDirection: "row",
-                    alignItems: "center",
-                }}
-            >
-                <MaterialCommunityIcons name="plus" size={24} color="#40FF01" />
-                <Text
-                    style={{
-                        marginLeft: 10,
-                        fontSize: 16,
-                        color: "#000",
-                    }}
-                >
-                    Adicionar Cliente
-                </Text>
-            </TouchableOpacity>
-        </View>
-        
-        <View style={{ flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", marginTop: 20 }}>
-            {clientes.map((cliente, index) => renderButton(cliente, index))}
-        </View>
-
-        <Modalize
-            ref={modalizeRef}
-            adjustToContentHeight
-        >
-            <View style={{ padding: 20 }}>
-                <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 10 }}>Adicionar Cliente</Text>
-                <TextInput
-                    placeholder="Nome do Cliente"
-                    value={nome}
-                    onChangeText={setNome}
-                    style={{ 
-                        borderWidth: 1,
-                        marginBottom: 10,
-                        padding: 10,
-                        borderRadius: 5
-                    }}
-                />
-                <TextInput
-                    placeholder="Data de Entrada"
-                    value={dataEntrada}
-                    onChangeText={setDataEntrada}
-                    style={{ 
-                        borderWidth: 1,
-                        marginBottom: 10,
-                        padding: 10,
-                        borderRadius: 5
-                    }}
-                />
-                <TouchableOpacity onPress={openContractPicker} style={{ 
-                    borderWidth: 1, 
-                    borderColor: '#40FF01', 
-                    padding: 10, 
-                    borderRadius: 5, 
-                    justifyContent: 'center', 
-                    alignItems: 'center', 
-                    marginBottom: 10, 
-                    backgroundColor: '#f0f0f0' 
-                }}>
-                    <Text style={{ color: '#555' }}>
-                        {tempoContrato || 'Selecione o Tempo de Contrato'}
-                    </Text>
+        <View style={styles.container}>
+            <View style={styles.header}>
+                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+                    <MaterialCommunityIcons name="arrow-left" size={24} color="#40FF01" />
+                    <Text style={styles.backButtonText}>Menu</Text>
                 </TouchableOpacity>
-                <TextInput
-                    placeholder="Valor a Pagar"
-                    value={valor}
-                    onChangeText={setValor}
-                    style={{ 
-                        borderWidth: 1,
-                        marginBottom: 10,
-                        padding: 10,
-                        borderRadius: 5
-                    }}
-                />
-                <TouchableOpacity onPress={openServiceModal} style={{ backgroundColor: '#f0f0f0', padding: 15, borderRadius: 10, marginBottom: 20, borderColor: '#40FF01', borderWidth:1}}>
-                    <Text style={{ textAlign: 'center', color: '#000', fontWeight: 'bold' }}>Adicionar Serviços</Text>
-                </TouchableOpacity>
-                <FlatList
-                    data={servicos}
-                    keyExtractor={(item, index) => index.toString()}
-                    renderItem={({ item }) => (
-                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-                            <Text>{item}</Text>
-                        </View>
-                    )}
-                />
-                <TouchableOpacity onPress={handleAddClient} style={{ backgroundColor: '#40FF01', padding: 15, borderRadius: 10, marginBottom: 20 }}>
-                    <Text style={{ textAlign: 'center', color: '#fff', fontWeight: 'bold' }}>Adicionar</Text>
+                <TouchableOpacity onPress={openModal} style={styles.addButton}>
+                    <MaterialCommunityIcons name="plus" size={24} color="#40FF01" />
+                    <Text style={styles.addButtonText}>Adicionar Cliente</Text>
                 </TouchableOpacity>
             </View>
-        </Modalize>
 
-        <Modalize
-            ref={serviceModalizeRef}
-            adjustToContentHeight
-        >
-            <View style={{ padding: 20 }}>
-                <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 10 }}>Adicionar Serviço</Text>
-                <TextInput
-                    placeholder="Nome do Serviço"
-                    value={newService}
-                    onChangeText={setNewService}
-                    style={{ 
-                        borderWidth: 1,
-                        marginBottom: 10,
-                        padding: 10,
-                        borderRadius: 5
-                    }}
-                />
-                <TouchableOpacity onPress={handleAddService} style={{ backgroundColor: '#40FF01', padding: 15, borderRadius: 10 }}>
-                    <Text style={{ textAlign: 'center', color: '#fff', fontWeight: 'bold' }}>Adicionar Serviço</Text>
-                </TouchableOpacity>
-            </View>
-        </Modalize>
+            <Text style={styles.clientesTitle}>Clientes</Text>
 
-        <Modalize
-            ref={contractPickerRef}
-            adjustToContentHeight
-        >
-            <View style={{ padding: 20 }}>
-                <TouchableOpacity onPress={() => handleSelectContractTime('3 meses')} style={{
-                borderWidth: 1,
-                borderColor: '#40FF01',
-                padding: 10,
-                borderRadius: 5,
-                justifyContent: 'center',
-                alignItems: 'center',
-                marginBottom: 10,
-                backgroundColor: '#f0f0f0',
-            }}>
-                    <Text style={{
-                        fontSize: 18,
-                        color: '#000',
-                    }}>3 meses</Text>
-                </TouchableOpacity>
-                <TouchableOpacity onPress={() => handleSelectContractTime('6 meses')} style={
-                    {
-                        borderWidth: 1,
-                        borderColor: '#40FF01',
-                        padding: 10,
-                        borderRadius: 5,
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                        marginBottom: 10,
-                        backgroundColor: '#f0f0f0',
-                    }}>
-                    <Text style={{
-                        fontSize: 18,
-                        color: '#000',
-                    }}>6 meses</Text>
-                </TouchableOpacity>
-                <TouchableOpacity onPress={() => handleSelectContractTime('12 meses')} style={
-                    {
-                        borderWidth: 1,
-                        borderColor: '#40FF01',
-                        padding: 10,
-                        borderRadius: 5,
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                        marginBottom: 10,
-                        backgroundColor: '#f0f0f0',
-                    }}>
-                    <Text style={{
-                        fontSize: 18,
-                        color: '#000',
-                    }}>12 meses</Text>
-                </TouchableOpacity>
-            </View>
-        </Modalize>
+            <ScrollView contentContainerStyle={styles.clientList} showsVerticalScrollIndicator={false}>
+                {clientes.map((cliente, index) => renderButton(cliente, index))}
+            </ScrollView>
+
+            <Modalize ref={modalizeRef} adjustToContentHeight>
+                <View style={styles.modalContent}>
+                    <Text style={styles.modalTitle}>Adicionar Cliente</Text>
+                    <TextInput
+                        placeholder="Nome do Cliente"
+                        value={nome}
+                        onChangeText={setNome}
+                        style={styles.input}
+                    />
+                    <TextInput
+                        placeholder="Data de Entrada"
+                        value={dataEntrada}
+                        onChangeText={setDataEntrada}
+                        style={styles.input}
+                    />
+                    <TouchableOpacity onPress={openContractPicker} style={styles.pickerButton}>
+                        <Text style={styles.pickerButtonText}>
+                            {tempoContrato || 'Selecione o Tempo de Contrato'}
+                        </Text>
+                    </TouchableOpacity>
+                    <TextInput
+                        placeholder="Valor a Pagar"
+                        value={valor}
+                        onChangeText={setValor}
+                        style={styles.input}
+                    />
+                   
+                    <TouchableOpacity onPress={handleAddClient} style={styles.submitButton}>
+                        <Text style={styles.submitButtonText}>Adicionar</Text>
+                    </TouchableOpacity>
+                </View>
+            </Modalize>
+            <Modalize ref={contractPickerRef} adjustToContentHeight>
+                <View style={styles.modalContent}>
+                    <TouchableOpacity onPress={() => handleSelectContractTime('3 meses')} style={styles.pickerItem}>
+                        <Text style={styles.pickerItemText}>3 meses</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={() => handleSelectContractTime('6 meses')} style={styles.pickerItem}>
+                        <Text style={styles.pickerItemText}>6 meses</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={() => handleSelectContractTime('12 meses')} style={styles.pickerItem}>
+                        <Text style={styles.pickerItemText}>12 meses</Text>
+                    </TouchableOpacity>
+                </View>
+            </Modalize>
         </View>
     );
 }
 
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        paddingHorizontal: 20,
+        paddingVertical: 80,
+        backgroundColor: 'white',
+    },
+    header: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 20,
+    },
+    backButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    backButtonText: {
+        marginLeft: 10,
+        fontSize: 24,
+        fontWeight: 'bold',
+        color: '#000',
+    },
+    addButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    addButtonText: {
+        marginLeft: 10,
+        fontSize: 16,
+        color: '#000',
+    },
+    clientesTitle: {
+        fontSize: 24,
+        fontWeight: 'bold',
+        color: '#000',
+        marginBottom: 10,
+    },
+    clientList: {
+        flexDirection: 'column',
+        justifyContent: 'flex-start',
+        paddingBottom: 20,
+    },
+    buttonContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        width: '100%',
+        borderRadius: 10,
+        backgroundColor: '#BDBCBB',
+        marginVertical: 10,
+        paddingHorizontal: 10,
+        paddingVertical: 20,
+    },
+    buttonContent: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        width: '100%',
+    },
+    buttonInnerContent: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        flexShrink: 1,
+    },
+    buttonText: {
+        marginLeft: 10,
+        fontSize: 16,
+        fontWeight: 'bold',
+        color: '#000',
+        flexShrink: 1,
+    },
+    modalContent: {
+        padding: 20,
+    },
+    modalTitle: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        marginBottom: 10,
+    },
+    input: {
+        borderWidth: 1,
+        marginBottom: 10,
+        padding: 10,
+        borderRadius: 5,
+    },
+    pickerButton: {
+        borderWidth: 1,
+        borderColor: '#40FF01',
+        padding: 10,
+        borderRadius: 5,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: 10,
+        backgroundColor: '#f0f0f0',
+    },
+    pickerButtonText: {
+        color: '#555',
+    },
+    serviceButton: {
+        backgroundColor: '#f0f0f0',
+        padding: 15,
+        borderRadius: 10,
+        marginBottom: 20,
+        borderColor: '#40FF01',
+        borderWidth: 1,
+    },
+    serviceButtonText: {
+        textAlign: 'center',
+        color: '#000',
+        fontWeight: 'bold',
+    },
+    serviceItem: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 10,
+    },
+    submitButton: {
+        backgroundColor: '#40FF01',
+        padding: 15,
+        borderRadius: 10,
+        marginBottom: 20,
+    },
+    submitButtonText: {
+        textAlign: 'center',
+        color: '#fff',
+        fontWeight: 'bold',
+    },
+    pickerItem: {
+        borderWidth: 1,
+        borderColor: '#40FF01',
+        padding: 10,
+        borderRadius: 5,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: 10,
+        backgroundColor: '#f0f0f0',
+    },
+    pickerItemText: {
+        fontSize: 18,
+        color: '#000',
+    },
+});

@@ -1,5 +1,6 @@
 
 export interface ClientDTO {
+    [x: string]: any;
     reuniao: never[];
     demandas: never[];
     relatorios: never[];

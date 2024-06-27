@@ -5,7 +5,7 @@ import { Calendar, DateData } from 'react-native-calendars';
 import { Modalize } from 'react-native-modalize';
 import { TextInput } from 'react-native-gesture-handler';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { getDocs, collection } from 'firebase/firestore';
+import { getDocs, collection, updateDoc, arrayUnion, doc } from 'firebase/firestore';
 import { db } from '../../../config/firebase';
 import { addEvento, getEventos } from '../../../firestore/Calendario/eventoController';
 import { EventoDTO } from '../../../firestore/Calendario/eventoDTO';
@@ -72,35 +72,51 @@ export default function Calendario() {
             time,
             createdAt: new Date(),
         };
-
-        await addEvento(newEvent);
-
-        setEvents({
-            ...events,
-            [selectedDate]: { marked: true, dotColor: 'red', events: [...(events[selectedDate]?.events || []), newEvent] }
-        });
-
-        setAllEvents([...allEvents, newEvent]);
-
-        const newAviso: AvisoDTO = {
-            title,
-            employeeId: employee,
-            date: selectedDate,
-            time,
-            createdAt: new Date(),
-            client: clients.find(c => c.id === selectedClient)?.nome || '',
-            status: false,
-            completed: false
-        };
-
-        await addAviso(newAviso);
-
-        setTitle('');
-        setClient('');
-        setEmployee('');
-        setTime('');
-        modalizeRef.current?.close();
+    
+        try {
+            // Adiciona o evento na coleção de eventos
+            await addEvento(newEvent);
+    
+            // Atualiza a interface de eventos
+            setEvents({
+                ...events,
+                [selectedDate]: { marked: true, dotColor: 'red', events: [...(events[selectedDate]?.events || []), newEvent] }
+            });
+            setAllEvents([...allEvents, newEvent]);
+    
+            // Adiciona o aviso no Firestore
+            const newAviso: AvisoDTO = {
+                title,
+                employeeId: employee,
+                date: selectedDate,
+                time,
+                createdAt: new Date(),
+                client: clients.find(c => c.id === selectedClient)?.nome || '',
+                status: false,
+                completed: false
+            };
+    
+            await addAviso(newAviso);
+    
+            // Atualiza os eventos do cliente no Firestore
+            if (selectedClient) {
+                const clientDocRef = doc(db, 'clientes', selectedClient);
+                await updateDoc(clientDocRef, {
+                    eventos: arrayUnion(newEvent)
+                });
+            }
+    
+            // Limpa os campos do formulário
+            setTitle('');
+            setClient('');
+            setEmployee('');
+            setTime('');
+            modalizeRef.current?.close();
+        } catch (error) {
+            console.error('Erro ao adicionar evento:', error);
+        }
     };
+    
 
     const openClientPicker = () => {
         clientPickerRef.current?.open();

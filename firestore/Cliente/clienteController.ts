@@ -29,5 +29,11 @@ export const getClients = async () => {
   }
 };
 
+export const updateClientServices = async (clientId: string, services: string[]) => {
+    const clientRef = doc(db, 'clientes', clientId);
+    await updateDoc(clientRef, {
+        servicos: services
+    });
+};
 
 
