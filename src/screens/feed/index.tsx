@@ -1,34 +1,44 @@
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect, useState, useRef } from 'react';
-import { ImageBackground, StyleSheet, Text, TouchableOpacity, View, Dimensions, Pressable, Alert } from 'react-native';
+import { ImageBackground, StyleSheet, Text, TouchableOpacity, View, Dimensions, Pressable, Alert, ActivityIndicator } from 'react-native';
 import { Image } from "expo-image";
 import { useNavigation } from '@react-navigation/native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Modalize } from 'react-native-modalize';
-import * as ImagePicker from 'expo-image-picker';
 import { signOut } from 'firebase/auth';
-import { auth } from '../../../config/firebase'; // Certifique-se de importar corretamente
+import { doc, getDoc, updateDoc, setDoc } from 'firebase/firestore';
+import * as ImagePicker from 'expo-image-picker';
+import { Modalize } from 'react-native-modalize';
+import { auth, db, storage } from '../../../config/firebase'; // Certifique-se de importar corretamente
+import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 
 export default function Feed() {
     const navigation = useNavigation();
     const [firstName, setFirstName] = useState('');
     const [profileImage, setProfileImage] = useState("https://www.pngkey.com/png/full/114-1149878_setting-user-avatar-in-specific-size-without-breaking.png");
+    const [uploading, setUploading] = useState(false);
     const modalizeRef = useRef<Modalize>(null);
 
     useEffect(() => {
-        const getUserName = async () => {
-            const name = await AsyncStorage.getItem('userName');
-            if (name) {
-                const firstName = name.split(' ')[0]; // Obter o primeiro nome
-                setFirstName(firstName);
-            }
-            const image = await AsyncStorage.getItem('profileImage');
-            if (image) {
-                setProfileImage(image);
+        const getUserProfile = async () => {
+            const user = auth.currentUser;
+            if (user) {
+                const docRef = doc(db, 'users', user.uid);
+                const docSnap = await getDoc(docRef);
+
+                if (docSnap.exists()) {
+                    const userData = docSnap.data();
+                    setFirstName(userData.firstName || '');
+                    setProfileImage(userData.profileImage || profileImage);
+                } else {
+                    // Se o documento não existe, cria um novo documento com dados padrão
+                    await setDoc(docRef, {
+                        firstName: '',
+                        profileImage: profileImage
+                    });
+                }
             }
         };
-        getUserName();
+        getUserProfile();
     }, []);
 
     const openModal = () => {
@@ -43,9 +53,48 @@ export default function Feed() {
             quality: 1,
         });
 
-        if (!result.canceled) {
-            setProfileImage(result.assets[0].uri);
-            await AsyncStorage.setItem('profileImage', result.assets[0].uri);
+        if (!result.canceled && result.assets.length > 0) {
+            const imageUri = result.assets[0].uri;
+            setUploading(true);
+            await uploadFile(imageUri);
+        }
+    };
+
+    const uploadFile = async (uri: string) => {
+        try {
+            const response = await fetch(uri);
+            const blob = await response.blob();
+            const user = auth.currentUser;
+            if (!user) {
+                setUploading(false);
+                return;
+            }
+
+            const storageRef = ref(storage, `profileImages/${user.uid}`);
+            const uploadTask = uploadBytesResumable(storageRef, blob);
+
+            uploadTask.on(
+                'state_changed',
+                (snapshot) => {
+                    const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                    console.log(`Upload is ${progress}% done`);
+                },
+                (error) => {
+                    console.error('Upload error:', error);
+                    Alert.alert('Erro', 'Ocorreu um erro ao fazer o upload da imagem. Tente novamente.');
+                    setUploading(false);
+                },
+                async () => {
+                    const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+                    setProfileImage(downloadURL);
+                    await updateDoc(doc(db, 'users', user.uid), { profileImage: downloadURL });
+                    setUploading(false);
+                }
+            );
+        } catch (error) {
+            console.error('Fetch error:', error);
+            Alert.alert('Erro', 'Ocorreu um erro ao processar a imagem. Tente novamente.');
+            setUploading(false);
         }
     };
 
@@ -121,7 +170,6 @@ export default function Feed() {
                 >
                     <TouchableOpacity
                         onPress={() => navigation.navigate("clientes")}
-
                         style={{
                             display: "flex",
                             flexDirection: "row",
@@ -180,7 +228,6 @@ export default function Feed() {
                 >
                     <TouchableOpacity
                         onPress={() => navigation.navigate("servicos")}
-
                         style={{
                             display: "flex",
                             flexDirection: "row",
@@ -238,66 +285,7 @@ export default function Feed() {
                     }}
                 >
                     <TouchableOpacity
-
-                        style={{
-                            display: "flex",
-                            flexDirection: "row",
-                            alignItems: "center",
-                            justifyContent: "space-between",
-                            width: "100%",
-                            borderRadius: 10,
-                            backgroundColor: "#BDBCBB",
-                        }}
                         onPress={() => navigation.navigate("Calendario")}
-                    >
-                        <View
-                            style={{
-                                paddingVertical: 20,
-                                paddingRight: 20,
-                                marginLeft: 20,
-                                display: "flex",
-                                width: Dimensions.get("window").width - 60,
-                                justifyContent: "space-between",
-                                alignItems: "center",
-                                flexDirection: "row",
-                            }}
-                        >
-                            <View
-                                style={{
-                                    display: "flex",
-                                    flexDirection: "row",
-                                    alignItems: "center",
-                                }}
-                            >
-                                <MaterialCommunityIcons
-                                    name="calendar"
-                                    size={24}
-                                    color="#40FF01"
-                                />
-                                <Text
-                                    style={{
-                                        marginLeft: 10,
-                                        fontSize: 16,
-                                        color: "#000",
-                                    }}
-                                >
-                                    Calendario
-                                </Text>
-                            </View>
-                            <Ionicons name="chevron-forward" size={14} color="#000" />
-                        </View>
-                    </TouchableOpacity>
-                </View>
-                <View
-                    style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                        marginTop: 20,
-                    }}
-                >
-                    <TouchableOpacity
-
                         style={{
                             display: "flex",
                             flexDirection: "row",
@@ -307,66 +295,6 @@ export default function Feed() {
                             borderRadius: 10,
                             backgroundColor: "#BDBCBB",
                         }}
-                        onPress={() => navigation.navigate("Avisos")}
-                    >
-                        <View
-                            style={{
-                                paddingVertical: 20,
-                                paddingRight: 20,
-                                marginLeft: 20,
-                                display: "flex",
-                                width: Dimensions.get("window").width - 60,
-                                justifyContent: "space-between",
-                                alignItems: "center",
-                                flexDirection: "row",
-                            }}
-                        >
-                            <View
-                                style={{
-                                    display: "flex",
-                                    flexDirection: "row",
-                                    alignItems: "center",
-                                }}
-                            >
-                                <MaterialCommunityIcons
-                                    name="alert"
-                                    size={24}
-                                    color="#40FF01"
-                                />
-                                <Text
-                                    style={{
-                                        marginLeft: 10,
-                                        fontSize: 16,
-                                        color: "#000",
-                                    }}
-                                >
-                                    Avisos
-                                </Text>
-                            </View>
-                            <Ionicons name="chevron-forward" size={14} color="#000" />
-                        </View>
-                    </TouchableOpacity>
-                </View>
-                <View
-                    style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                        marginTop: 20,
-                    }}
-                >
-                    <TouchableOpacity
-
-                        style={{
-                            display: "flex",
-                            flexDirection: "row",
-                            alignItems: "center",
-                            justifyContent: "space-between",
-                            width: "100%",
-                            borderRadius: 10,
-                            backgroundColor: "#BDBCBB",
-                        }}
-                        onPress={() => navigation.navigate("DemandasFeed")}
                     >
                         <View
                             style={{
@@ -415,7 +343,7 @@ export default function Feed() {
                     }}
                 >
                     <TouchableOpacity
-
+                        onPress={() => navigation.navigate("Avisos")}
                         style={{
                             display: "flex",
                             flexDirection: "row",
@@ -425,7 +353,122 @@ export default function Feed() {
                             borderRadius: 10,
                             backgroundColor: "#BDBCBB",
                         }}
+                    >
+                        <View
+                            style={{
+                                paddingVertical: 20,
+                                paddingRight: 20,
+                                marginLeft: 20,
+                                display: "flex",
+                                width: Dimensions.get("window").width - 60,
+                                justifyContent: "space-between",
+                                alignItems: "center",
+                                flexDirection: "row",
+                            }}
+                        >
+                            <View
+                                style={{
+                                    display: "flex",
+                                    flexDirection: "row",
+                                    alignItems: "center",
+                                }}
+                            >
+                                <MaterialCommunityIcons
+                                    name="alert"
+                                    size={24}
+                                    color="#40FF01"
+                                />
+                                <Text
+                                    style={{
+                                        marginLeft: 10,
+                                        fontSize: 16,
+                                        color: "#000",
+                                    }}
+                                >
+                                    Avisos
+                                </Text>
+                            </View>
+                            <Ionicons name="chevron-forward" size={14} color="#000" />
+                        </View>
+                    </TouchableOpacity>
+                </View>
+                <View
+                    style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        marginTop: 20,
+                    }}
+                >
+                    <TouchableOpacity
+                        onPress={() => navigation.navigate("DemandasFeed")}
+                        style={{
+                            display: "flex",
+                            flexDirection: "row",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            width: "100%",
+                            borderRadius: 10,
+                            backgroundColor: "#BDBCBB",
+                        }}
+                    >
+                        <View
+                            style={{
+                                paddingVertical: 20,
+                                paddingRight: 20,
+                                marginLeft: 20,
+                                display: "flex",
+                                width: Dimensions.get("window").width - 60,
+                                justifyContent: "space-between",
+                                alignItems: "center",
+                                flexDirection: "row",
+                            }}
+                        >
+                            <View
+                                style={{
+                                    display: "flex",
+                                    flexDirection: "row",
+                                    alignItems: "center",
+                                }}
+                            >
+                                <MaterialCommunityIcons
+                                    name="calendar"
+                                    size={24}
+                                    color="#40FF01"
+                                />
+                                <Text
+                                    style={{
+                                        marginLeft: 10,
+                                        fontSize: 16,
+                                        color: "#000",
+                                    }}
+                                >
+                                    Calendario
+                                </Text>
+                            </View>
+                            <Ionicons name="chevron-forward" size={14} color="#000" />
+                        </View>
+                    </TouchableOpacity>
+                </View>
+                <View
+                    style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        marginTop: 20,
+                    }}
+                >
+                    <TouchableOpacity
                         onPress={() => navigation.navigate("Ponto")}
+                        style={{
+                            display: "flex",
+                            flexDirection: "row",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            width: "100%",
+                            borderRadius: 10,
+                            backgroundColor: "#BDBCBB",
+                        }}
                     >
                         <View
                             style={{
@@ -470,7 +513,11 @@ export default function Feed() {
             <Modalize ref={modalizeRef} adjustToContentHeight>
                 <View style={{ padding: 20 }}>
                     <TouchableOpacity onPress={pickImage} style={{ backgroundColor: '#40FF01', padding: 15, borderRadius: 10, marginBottom: 10 }}>
-                        <Text style={{ textAlign: 'center', color: '#fff', fontWeight: 'bold' }}>Adicionar Foto de Perfil</Text>
+                        {uploading ? (
+                            <ActivityIndicator size="small" color="#fff" />
+                        ) : (
+                            <Text style={{ textAlign: 'center', color: '#fff', fontWeight: 'bold' }}>Adicionar Foto de Perfil</Text>
+                        )}
                     </TouchableOpacity>
                     <TouchableOpacity onPress={changePassword} style={{ backgroundColor: '#40FF01', padding: 15, borderRadius: 10, marginBottom: 10 }}>
                         <Text style={{ textAlign: 'center', color: '#fff', fontWeight: 'bold' }}>Alterar Senha</Text>

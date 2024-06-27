@@ -5,7 +5,6 @@ export interface ClientDTO {
     demandas: never[];
     relatorios: never[];
     briefing: never[];
-    id: string;
     nome: string;
     dataEntrada: string;
     tempoContrato: string;

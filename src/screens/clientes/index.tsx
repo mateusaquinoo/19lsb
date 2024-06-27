@@ -42,8 +42,8 @@ export default function Feed() {
             valor,
             relatorios: [],
             briefing: [],
-            id: '',
-            demandas: []
+            demandas: [],
+            reuniao: []
         };
         const addedClient = await addClient(newClient);
         setClientes([...clientes, addedClient]);
@@ -181,7 +181,7 @@ export default function Feed() {
                 data: servicos,
                 keyExtractor: (item) => item.id,
                 renderItem: ({ item }) => (
-                    <View key={item.id} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                    <View  style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
                         <Text>{item.nome}</Text>
                         <Switch
                             value={selectedServicos.includes(item.nome)}

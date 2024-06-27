@@ -1,38 +1,49 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, StyleSheet, TouchableOpacity } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, FlatList } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { useAuth } from '../../auth/AuthProvider';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { DemandaDTO } from '../../../firestore/Demanda/demandaDTO';
-import { getDemandasByResponsavel } from '../../../firestore/Demanda/demandaController';
-import { getClients } from '../../../firestore/Cliente/clienteController'; // Importe a função para obter os clientes
+import { getEventos } from '../../../firestore/Calendario/eventoController';
+import { EventoDTO } from '../../../firestore/Calendario/eventoDTO';
+import { getFuncionarios } from '../../../firestore/Funcionarios/funcionariosController';
+import { FuncionarioDTO } from '../../../firestore/Funcionarios/funcionariosDTO';
 
 export default function DemandasFeed() {
     const navigation = useNavigation();
-    const { user } = useAuth();
-    const [demandas, setDemandas] = useState<DemandaDTO[]>([]);
-    const [clientes, setClientes] = useState<{ [key: string]: string }>({}); // Objeto para armazenar os nomes dos clientes
+    const [selectedDate, setSelectedDate] = useState(new Date());
+    const [events, setEvents] = useState<EventoDTO[]>([]);
+    const [funcionarios, setFuncionarios] = useState<{ nome: string | undefined; id: string; }[]>([]);
 
     useEffect(() => {
-        const fetchDemandas = async () => {
-            if (user) {
-                console.log('User UID:', user.uid);
-                const demandasList = await getDemandasByResponsavel(user.uid);
-                console.log('Demandas:', demandasList);
-                setDemandas(demandasList);
+        const fetchData = async () => {
+            const eventosList = await getEventos();
+            const filteredEvents = eventosList.filter(event =>
+                new Date(event.date).toLocaleDateString() === selectedDate.toLocaleDateString()
+            );
+            setEvents(filteredEvents);
 
-                // Fetch clientes e mapeie os nomes dos clientes pelos seus IDs
-                const clientesList = await getClients();
-                const clientesMap: { [key: string]: string } = {};
-                clientesList.forEach(cliente => {
-                    clientesMap[cliente.id] = cliente.nome;
-                });
-                setClientes(clientesMap);
-            }
+            const fetchedFuncionarios = await getFuncionarios();
+            const formattedFuncionarios = fetchedFuncionarios.map(funcionario => ({
+                nome: funcionario.nome,
+                id: funcionario.id ?? ''
+            }));
+            setFuncionarios(formattedFuncionarios);
         };
 
-        fetchDemandas();
-    }, [user]);
+        fetchData();
+    }, [selectedDate]);
+
+    const handlePreviousDay = () => {
+        setSelectedDate(prevDate => new Date(prevDate.setDate(prevDate.getDate() - 1)));
+    };
+
+    const handleNextDay = () => {
+        setSelectedDate(prevDate => new Date(prevDate.setDate(prevDate.getDate() + 1)));
+    };
+
+    const getEmployeeName = (employeeId: string) => {
+        const employee = funcionarios.find(f => f.id === employeeId);
+        return employee ? employee.nome : employeeId;
+    };
 
     return (
         <View style={styles.container}>
@@ -41,30 +52,31 @@ export default function DemandasFeed() {
                     <MaterialCommunityIcons name="arrow-left" size={24} color="#40FF01" />
                     <Text style={styles.backButtonText}>Voltar</Text>
                 </TouchableOpacity>
+                
             </View>
-            <Text style={styles.title}>Demandas</Text>
+            <Text style={styles.title}>Calendário</Text>
+            <View style={styles.dateNavigation}>
+                <TouchableOpacity onPress={handlePreviousDay} style={styles.navigationButton}>
+                    <MaterialCommunityIcons name="chevron-left" size={24} color="#40FF01" />
+                </TouchableOpacity>
+                <Text style={styles.dateText}>{selectedDate.toLocaleDateString()}</Text>
+                <TouchableOpacity onPress={handleNextDay} style={styles.navigationButton}>
+                    <MaterialCommunityIcons name="chevron-right" size={24} color="#40FF01" />
+                </TouchableOpacity>
+            </View>
+
             <FlatList
-                data={demandas}
-                keyExtractor={item => item.id ?? ''}
+                data={events}
+                keyExtractor={(item) => item.id ?? ''}
                 renderItem={({ item }) => (
-                    <View style={styles.demandaContainer}>
-                        <Text style={styles.demandaTitle}>Título: {item.titulo}</Text>
-                        <Text style={styles.demandaTitle}>Cliente: {clientes[item.clienteId]}</Text>
-                        <Text style={styles.demandaDetails}>Data: {item.data}</Text>
-                        <Text style={styles.demandaDetails}>Hora: {item.hora}</Text>
-                        <Text style={styles.demandaDetails}>Descrição: {item.descricao}</Text>
-                        <Text style={{ fontSize: 16, color: '#555', marginTop: 10 }}>Criado em: {new Date(item.createdAt).toLocaleDateString()}</Text>
-                        {item.arquivoUri && (
-                            <TouchableOpacity
-                                onPress={() => navigation.navigate('VisualizarArquivo', { uri: item.arquivoUri ?? '', tipo: 'application/pdf' })}
-                                style={{ backgroundColor: '#40FF01', padding: 10, borderRadius: 5, marginTop: 10, alignItems: 'center' }}
-                            >
-                                <Text style={{ color: '#fff' }}>Ver Arquivo</Text>
-                            </TouchableOpacity>
-                        )}
+                    <View style={styles.eventContainer}>
+                        <Text style={styles.eventTitle}>Título: {item.title}</Text>
+                        <Text style={styles.eventDetails}>Cliente: {item.client}</Text>
+                        <Text style={styles.eventDetails}>Funcionário: {getEmployeeName(item.employee)}</Text>
+                        <Text style={styles.eventDetails}>Hora: {item.time}</Text>
                     </View>
                 )}
-                showsVerticalScrollIndicator={false}
+                ListEmptyComponent={<Text style={styles.noEventText}>Nenhum compromisso para o dia.</Text>}
             />
         </View>
     );
@@ -95,11 +107,25 @@ const styles = StyleSheet.create({
     title: {
         fontSize: 24,
         fontWeight: 'bold',
-        marginBottom: 20,
         color: '#000',
-        textAlign: 'center',
+        alignSelf: 'center',
+        marginTop: 10, // Adicione uma margem superior para ajustar o espaço
     },
-    demandaContainer: {
+    dateNavigation: {
+        flexDirection: 'row',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: 20,
+    },
+    navigationButton: {
+        padding: 10,
+    },
+    dateText: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: '#000',
+    },
+    eventContainer: {
         padding: 15,
         backgroundColor: '#f0f0f0',
         borderRadius: 10,
@@ -107,13 +133,19 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: '#40FF01',
     },
-    demandaTitle: {
+    eventTitle: {
         fontSize: 18,
         color: '#000',
         marginBottom: 5,
     },
-    demandaDetails: {
+    eventDetails: {
         fontSize: 16,
         color: '#555',
+    },
+    noEventText: {
+        fontSize: 16,
+        color: '#555',
+        textAlign: 'center',
+        marginTop: 20,
     },
 });

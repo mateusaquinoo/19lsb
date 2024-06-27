@@ -23,6 +23,7 @@ export default function Calendario() {
     const [employees, setEmployees] = useState<{ nome: string | undefined; id: string; }[]>([]);
     const [events, setEvents] = useState<{ [key: string]: any }>({});
     const [allEvents, setAllEvents] = useState<EventoDTO[]>([]);
+    const [selectedClient, setSelectedClient] = useState<string | null>(null);
     const modalizeRef = useRef<Modalize>(null);
     const clientPickerRef = useRef<Modalize>(null);
     const employeePickerRef = useRef<Modalize>(null);
@@ -65,7 +66,7 @@ export default function Calendario() {
     const handleAddEvent = async () => {
         const newEvent: EventoDTO = {
             title,
-            client,
+            client: selectedClient || '',
             employee,
             date: selectedDate,
             time,
@@ -87,7 +88,7 @@ export default function Calendario() {
             date: selectedDate,
             time,
             createdAt: new Date(),
-            client: clients.find(c => c.id === client)?.nome || '',
+            client: clients.find(c => c.id === selectedClient)?.nome || '',
         };
 
         await addAviso(newAviso);
@@ -152,54 +153,46 @@ export default function Calendario() {
                     <Text style={{ marginLeft: 10, fontSize: 24, fontWeight: "bold", color: "#000" }}>Voltar</Text>
                 </TouchableOpacity>
             </View>
+            
+            <Text style={styles.title}>Demandas:</Text>
+            
+            <TouchableOpacity onPress={openClientPicker} style={styles.pickerButton}>
+                <Text style={styles.pickerButtonText}>{selectedClient ? clients.find(c => c.id === selectedClient)?.nome : 'Selecione o Cliente'}</Text>
+            </TouchableOpacity>
 
-            <View style={styles.calendarContainer}>
-                <Calendar
-                    onDayPress={handleDayPress}
-                    markedDates={markedDates}
-                    theme={{
-                        'stylesheet.calendar.header': {
-                            week: {
-                                marginTop: 5,
-                                flexDirection: 'row',
-                                justifyContent: 'space-between',
-                            },
-                        },
-                    }}
-                    dayComponent={({ date }: { date: DateData }) => {
-                        const isPast = new Date(date.dateString).getTime() < new Date().setHours(0, 0, 0, 0);
-                        const isToday = date.dateString === today;
-                        const isSelected = date.dateString === selectedDate;
-                        return (
-                            <TouchableOpacity onPress={() => handleDayPress(date)} disabled={isPast && !isToday}>
-                                <View style={[styles.dayContainer, isPast && styles.pastDay, isToday && styles.today, isSelected && styles.selectedDay]}>
-                                    <Text style={[styles.dayText, isPast && styles.pastDayText, isToday && styles.todayText, isSelected && styles.selectedDayText]}>
-                                        {date.day}
-                                    </Text>
-                                </View>
-                            </TouchableOpacity>
-                        );
-                    }}
-                />
-            </View>
-
-            <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollViewContent} showsVerticalScrollIndicator={false}>
-                {allEvents.length > 0 ? (
-                    allEvents.map((event, index) => (
-                        <View key={index} style={styles.eventContainer}>
-                            <Text style={styles.eventTitle}>Título: {event.title}</Text>
-                            <Text style={styles.eventDetails}>Cliente: {clients.find(c => c.id === event.client)?.nome}</Text>
-                            <Text style={styles.eventDetails}>Funcionário: {employees.find(e => e.id === event.employee)?.nome}</Text>
-                            <View style={styles.eventFooter}>
-                                <Text style={styles.eventDate}>Data: {event.date}</Text>
-                                <Text style={styles.eventTime}>Hora: {event.time}</Text>
-                            </View>
-                        </View>
-                    ))
-                ) : (
-                    <Text style={styles.noEventText}>Nenhum evento agendado.</Text>
-                )}
-            </ScrollView>
+            {selectedClient && (
+                <>
+                    <View style={styles.calendarContainer}>
+                        <Calendar
+                            onDayPress={handleDayPress}
+                            markedDates={markedDates}
+                            theme={{
+                                'stylesheet.calendar.header': {
+                                    week: {
+                                        marginTop: 5,
+                                        flexDirection: 'row',
+                                        justifyContent: 'space-between',
+                                    },
+                                },
+                            }}
+                            dayComponent={({ date }: { date: DateData }) => {
+                                const isPast = new Date(date.dateString).getTime() < new Date().setHours(0, 0, 0, 0);
+                                const isToday = date.dateString === today;
+                                const isSelected = date.dateString === selectedDate;
+                                return (
+                                    <TouchableOpacity onPress={() => handleDayPress(date)} disabled={isPast && !isToday}>
+                                        <View style={[styles.dayContainer, isPast && styles.pastDay, isToday && styles.today, isSelected && styles.selectedDay]}>
+                                            <Text style={[styles.dayText, isPast && styles.pastDayText, isToday && styles.todayText, isSelected && styles.selectedDayText]}>
+                                                {date.day}
+                                            </Text>
+                                        </View>
+                                    </TouchableOpacity>
+                                );
+                            }}
+                        />
+                    </View>
+                </>
+            )}
 
             <Modalize ref={modalizeRef} adjustToContentHeight>
                 <View style={styles.modalContent}>
@@ -210,9 +203,6 @@ export default function Calendario() {
                         onChangeText={setTitle}
                         style={styles.input}
                     />
-                    <TouchableOpacity onPress={openClientPicker} style={styles.pickerButton}>
-                        <Text style={styles.pickerButtonText}>{client ? clients.find(c => c.id === client)?.nome : 'Selecione o Cliente'}</Text>
-                    </TouchableOpacity>
                     <TouchableOpacity onPress={openEmployeePicker} style={styles.pickerButton}>
                         <Text style={styles.pickerButtonText}>{employee ? employees.find(e => e.id === employee)?.nome : 'Selecione o Responsável'}</Text>
                     </TouchableOpacity>
@@ -234,7 +224,7 @@ export default function Calendario() {
                         <TouchableOpacity
                             key={client.id}
                             onPress={() => {
-                                setClient(client.id);
+                                setSelectedClient(client.id);
                                 clientPickerRef.current?.close();
                             }}
                             style={styles.pickerItem}
@@ -266,6 +256,12 @@ export default function Calendario() {
 }
 
 const styles = StyleSheet.create({
+    title: {
+        fontSize: 24,
+        fontWeight: 'bold',
+        marginVertical: 20,
+        color: '#000',
+    },
     calendarContainer: {
         borderWidth: 1,
         borderColor: 'black',
