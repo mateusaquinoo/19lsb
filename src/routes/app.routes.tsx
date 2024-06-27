@@ -2,7 +2,6 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import Feed from "../screens/feed";
 import Home from "../screens/home";
 import Clientes from "../screens/clientes";
-import Servico from "../screens/servico";
 import ClienteDetalhes from "../screens/detalhesCliente";
 import ServicosCliente from "../screens/servicosCliente";
 import AcessosCliente from "../screens/acessosCliente";
@@ -38,12 +37,6 @@ export function AppRoutes() {
             name="clientes"
             component={Clientes} 
             options={{ headerShown: false }}  
-            />
-
-            <Screen 
-            name="servicos"
-            component={Servico}
-            options={{ headerShown: false }} 
             />
 
             <Screen 

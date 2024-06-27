@@ -3,7 +3,6 @@ export declare global {
         interface RootParamList {
             Feed: undefined;
             clientes: undefined;
-            servicos: undefined;
             Home: undefined;
             ClienteDetalhes: { cliente: ClientDTO };
             AcessosCliente: { cliente: ClientDTO };

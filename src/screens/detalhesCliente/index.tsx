@@ -50,7 +50,7 @@ export default function ClienteDetalhes() {
                             color: "#000",
                         }}
                     >
-                        Menu
+                        Clientes
                     </Text>
                 </TouchableOpacity>
             </View>

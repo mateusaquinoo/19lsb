@@ -218,64 +218,7 @@ export default function Feed() {
                         </View>
                     </TouchableOpacity>
                 </View>
-                <View
-                    style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                        marginTop: 20,
-                    }}
-                >
-                    <TouchableOpacity
-                        onPress={() => navigation.navigate("servicos")}
-                        style={{
-                            display: "flex",
-                            flexDirection: "row",
-                            alignItems: "center",
-                            justifyContent: "space-between",
-                            width: "100%",
-                            borderRadius: 10,
-                            backgroundColor: "#BDBCBB",
-                        }}
-                    >
-                        <View
-                            style={{
-                                paddingVertical: 20,
-                                paddingRight: 20,
-                                marginLeft: 20,
-                                display: "flex",
-                                width: Dimensions.get("window").width - 60,
-                                justifyContent: "space-between",
-                                alignItems: "center",
-                                flexDirection: "row",
-                            }}
-                        >
-                            <View
-                                style={{
-                                    display: "flex",
-                                    flexDirection: "row",
-                                    alignItems: "center",
-                                }}
-                            >
-                                <MaterialCommunityIcons
-                                    name="clipboard-account-outline"
-                                    size={24}
-                                    color="#40FF01"
-                                />
-                                <Text
-                                    style={{
-                                        marginLeft: 10,
-                                        fontSize: 16,
-                                        color: "#000",
-                                    }}
-                                >
-                                    Serviços
-                                </Text>
-                            </View>
-                            <Ionicons name="chevron-forward" size={14} color="#000" />
-                        </View>
-                    </TouchableOpacity>
-                </View>
+           
                 <View
                     style={{
                         display: "flex",

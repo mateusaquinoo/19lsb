@@ -1,6 +1,6 @@
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import React, { useState, useEffect, useRef, ReactElement, JSXElementConstructor } from 'react';
-import { Text, TouchableOpacity, View, Dimensions, TextInput, Switch, FlatList, ListRenderItemInfo } from 'react-native';
+import { Text, TouchableOpacity, View, Dimensions, TextInput, FlatList, Switch } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Modalize } from 'react-native-modalize';
 import { ClientDTO } from '../../../firestore/Cliente/clienteDTO';
@@ -8,29 +8,38 @@ import { addClient, getClients } from '../../../firestore/Cliente/clienteControl
 import { ServicoDTO } from '../../../firestore/Servicos/servicosDTO';
 import { getServicos } from '../../../firestore/Servicos/servicoController';
 
-export default function Feed() {
+export default function Cliente() {
     const navigation = useNavigation();
     const modalizeRef = useRef<Modalize>(null);
+    const serviceModalizeRef = useRef<Modalize>(null);
     const [clientes, setClientes] = useState<ClientDTO[]>([]);
-    const [servicos, setServicos] = useState<ServicoDTO[]>([]);
     const [nome, setNome] = useState('');
     const [dataEntrada, setDataEntrada] = useState('');
     const [tempoContrato, setTempoContrato] = useState('');
-    const [selectedServicos, setSelectedServicos] = useState<string[]>([]);
     const [valor, setValor] = useState('');
+    const [servicos, setServicos] = useState<string[]>([]);
+    const [newService, setNewService] = useState('');
 
     useEffect(() => {
-        const fetchClientsAndServices = async () => {
+        const fetchClients = async () => {
             const clients = await getClients();
             setClientes(clients);
-            const fetchedServicos = await getServicos();
-            setServicos(fetchedServicos);
         };
-        fetchClientsAndServices();
+        fetchClients();
     }, []);
 
     const openModal = () => {
         modalizeRef.current?.open();
+    };
+
+    const openServiceModal = () => {
+        serviceModalizeRef.current?.open();
+    };
+
+    const handleAddService = () => {
+        setServicos([...servicos, newService]);
+        setNewService('');
+        serviceModalizeRef.current?.close();
     };
 
     const handleAddClient = async () => {
@@ -38,7 +47,7 @@ export default function Feed() {
             nome,
             dataEntrada,
             tempoContrato,
-            servicos: selectedServicos, // Mantendo como array
+            servicos,
             valor,
             relatorios: [],
             briefing: [],
@@ -50,17 +59,9 @@ export default function Feed() {
         setNome('');
         setDataEntrada('');
         setTempoContrato('');
-        setSelectedServicos([]);
+        setServicos([]);
         setValor('');
         modalizeRef.current?.close();
-    };
-
-    const toggleService = (service: string) => {
-        if (selectedServicos.includes(service)) {
-            setSelectedServicos(selectedServicos.filter(s => s !== service));
-        } else {
-            setSelectedServicos([...selectedServicos, service]);
-        }
     };
 
     const renderButton = (cliente: ClientDTO, index: number) => (
@@ -177,80 +178,94 @@ export default function Feed() {
 
         <Modalize
             ref={modalizeRef}
-            flatListProps={{
-                data: servicos,
-                keyExtractor: (item) => item.id,
-                renderItem: ({ item }) => (
-                    <View  style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-                        <Text>{item.nome}</Text>
-                        <Switch
-                            value={selectedServicos.includes(item.nome)}
-                            onValueChange={() => toggleService(item.nome)}
-                        />
-                    </View>
-                ),
-                ListHeaderComponent: (
-                    <>
-                        <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 10 }}>Adicionar Cliente</Text>
-                        <TextInput
-                            placeholder="Nome do Cliente"
-                            value={nome}
-                            onChangeText={setNome}
-                            style={{ 
-                                borderWidth: 1,
-                                marginBottom: 10,
-                                padding: 10,
-                                borderRadius: 5
-                            }}
-                        />
-                        <TextInput
-                            placeholder="Data de Entrada"
-                            value={dataEntrada}
-                            onChangeText={setDataEntrada}
-                            style={{ 
-                                borderWidth: 1,
-                                marginBottom: 10,
-                                padding: 10,
-                                borderRadius: 5
-                            }}
-                        />
-                        <TextInput
-                            placeholder="Tempo de Contrato"
-                            value={tempoContrato}
-                            onChangeText={setTempoContrato}
-                            style={{ 
-                                borderWidth: 1,
-                                marginBottom: 10,
-                                padding: 10,
-                                borderRadius: 5
-                            }}
-                        />
-                        <Text style={{ marginBottom: 10, fontWeight: 'bold' }}>Serviços Contratados</Text>
-                    </>
-                ),
-                ListFooterComponent: (
-                    <>
-                        <TextInput
-                            placeholder="Valor a Pagar"
-                            value={valor}
-                            onChangeText={setValor}
-                            style={{ 
-                                borderWidth: 1,
-                                marginBottom: 10,
-                                padding: 10,
-                                borderRadius: 5
-                            }}
-                        />
-                        <TouchableOpacity onPress={handleAddClient} style={{ backgroundColor: '#40FF01', padding: 15, borderRadius: 10, marginBottom: 20 }}>
-                            <Text style={{ textAlign: 'center', color: '#fff', fontWeight: 'bold' }}>Adicionar</Text>
-                        </TouchableOpacity>
-                    </>
-                ),
-                contentContainerStyle: { padding: 20 },
-                showsVerticalScrollIndicator: false,
-            }}
-            snapPoint={500}
-        />
+            adjustToContentHeight
+        >
+            <View style={{ padding: 20 }}>
+                <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 10 }}>Adicionar Cliente</Text>
+                <TextInput
+                    placeholder="Nome do Cliente"
+                    value={nome}
+                    onChangeText={setNome}
+                    style={{ 
+                        borderWidth: 1,
+                        marginBottom: 10,
+                        padding: 10,
+                        borderRadius: 5
+                    }}
+                />
+                <TextInput
+                    placeholder="Data de Entrada"
+                    value={dataEntrada}
+                    onChangeText={setDataEntrada}
+                    style={{ 
+                        borderWidth: 1,
+                        marginBottom: 10,
+                        padding: 10,
+                        borderRadius: 5
+                    }}
+                />
+                <TextInput
+                    placeholder="Tempo de Contrato"
+                    value={tempoContrato}
+                    onChangeText={setTempoContrato}
+                    style={{ 
+                        borderWidth: 1,
+                        marginBottom: 10,
+                        padding: 10,
+                        borderRadius: 5
+                    }}
+                />
+                <TextInput
+                    placeholder="Valor a Pagar"
+                    value={valor}
+                    onChangeText={setValor}
+                    style={{ 
+                        borderWidth: 1,
+                        marginBottom: 10,
+                        padding: 10,
+                        borderRadius: 5
+                    }}
+                />
+                <TouchableOpacity onPress={openServiceModal} style={{ backgroundColor: '#40FF01', padding: 15, borderRadius: 10, marginBottom: 20 }}>
+                    <Text style={{ textAlign: 'center', color: '#fff', fontWeight: 'bold' }}>Adicionar Serviços</Text>
+                </TouchableOpacity>
+                <FlatList
+                    data={servicos}
+                    keyExtractor={(item, index) => index.toString()}
+                    renderItem={({ item }) => (
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                            <Text>{item}</Text>
+                        </View>
+                    )}
+                />
+                <TouchableOpacity onPress={handleAddClient} style={{ backgroundColor: '#40FF01', padding: 15, borderRadius: 10, marginBottom: 20 }}>
+                    <Text style={{ textAlign: 'center', color: '#fff', fontWeight: 'bold' }}>Adicionar</Text>
+                </TouchableOpacity>
+            </View>
+        </Modalize>
+
+        <Modalize
+            ref={serviceModalizeRef}
+            adjustToContentHeight
+        >
+            <View style={{ padding: 20 }}>
+                <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 10 }}>Adicionar Serviço</Text>
+                <TextInput
+                    placeholder="Nome do Serviço"
+                    value={newService}
+                    onChangeText={setNewService}
+                    style={{ 
+                        borderWidth: 1,
+                        marginBottom: 10,
+                        padding: 10,
+                        borderRadius: 5
+                    }}
+                />
+                <TouchableOpacity onPress={handleAddService} style={{ backgroundColor: '#40FF01', padding: 15, borderRadius: 10 }}>
+                    <Text style={{ textAlign: 'center', color: '#fff', fontWeight: 'bold' }}>Adicionar Serviço</Text>
+                </TouchableOpacity>
+            </View>
+        </Modalize>
         </View>
     );
 }
