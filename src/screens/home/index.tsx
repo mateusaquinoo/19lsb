@@ -47,17 +47,18 @@ export default function Home() {
 
       // Adicionar o usuário à coleção de funcionários
       await addDoc(collection(db, 'funcionarios'), {
-        id: user.uid,
+        employeeId: user.uid, // Adiciona o campo employeeId
         nome: nome,
         email: email,
         dataNascimento: dataNascimento,
         cargo: cargo,
       });
 
+      console.log('Usuário criado com sucesso:', user);
+
       // Salvar o nome do usuário no AsyncStorage
       await AsyncStorage.setItem('userName', nome);
 
-      console.log('Usuário criado com sucesso:', user);
       modalizeRef.current?.close();
     } catch (error) {
       console.error("Erro ao criar conta:", error);
@@ -77,45 +78,17 @@ export default function Home() {
   };
 
   return (
-    <View style={{
-      flex: 1,
-    }}>
-      <ImageBackground source={lsb} 
-      style={{
-        width: '100%',
-        height: '100%',
-      }}>
-        <View style={{
-          flex: 1,
-          flexDirection: 'column',
-          justifyContent: 'center',
-          alignItems: 'center',
-        }}>
-          <TouchableOpacity onPress={openLoginModal}
-          style={{
-            backgroundColor: 'white',
-            width: 350,
-            height: 45, 
-            borderRadius: 50,
-            marginTop: 100,
-            justifyContent: 'center',
-          }}>
-            <Text style={{
-              textAlign: 'center',
-              fontSize: 18,
-              fontWeight: 'bold',
-              color: 'black',
-            }}>
+    <View style={{ flex: 1 }}>
+      <ImageBackground source={lsb} style={{ width: '100%', height: '100%' }}>
+        <View style={{ flex: 1, flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
+          <TouchableOpacity onPress={openLoginModal} style={{ backgroundColor: 'white', width: 350, height: 45, borderRadius: 50, marginTop: 100, justifyContent: 'center' }}>
+            <Text style={{ textAlign: 'center', fontSize: 18, fontWeight: 'bold', color: 'black' }}>
               ENTRAR
             </Text>
           </TouchableOpacity>
           
           <TouchableOpacity onPress={openSignUpModal}>
-            <Text style={{
-              color: 'white',
-              fontSize: 19,
-              marginTop: 20,
-            }}>
+            <Text style={{ color: 'white', fontSize: 19, marginTop: 20 }}>
               Cadastre-se
             </Text>
           </TouchableOpacity>
@@ -129,70 +102,37 @@ export default function Home() {
             placeholder="Nome"
             value={nome}
             onChangeText={setNome}
-            style={{ 
-              borderWidth: 1,
-              marginBottom: 10,
-              padding: 10,
-              borderRadius: 5
-            }}
+            style={{ borderWidth: 1, marginBottom: 10, padding: 10, borderRadius: 5 }}
           />
           <TextInput
             placeholder="Data de Nascimento"
             value={dataNascimento}
             onChangeText={setDataNascimento}
-            style={{ 
-              borderWidth: 1,
-              marginBottom: 10,
-              padding: 10,
-              borderRadius: 5
-            }}
+            style={{ borderWidth: 1, marginBottom: 10, padding: 10, borderRadius: 5 }}
           />
           <TextInput
             placeholder="Email"
             value={email}
             onChangeText={setEmail}
-            style={{ 
-              borderWidth: 1,
-              marginBottom: 10,
-              padding: 10,
-              borderRadius: 5
-            }}
+            style={{ borderWidth: 1, marginBottom: 10, padding: 10, borderRadius: 5 }}
           />
           <TextInput
             placeholder="Senha"
             value={senha}
             onChangeText={setSenha}
             secureTextEntry
-            style={{ 
-              borderWidth: 1,
-              marginBottom: 10,
-              padding: 10,
-              borderRadius: 5
-            }}
+            style={{ borderWidth: 1, marginBottom: 10, padding: 10, borderRadius: 5 }}
           />
           <TextInput
             placeholder="Confirmar Senha"
             value={confirmarSenha}
             onChangeText={setConfirmarSenha}
             secureTextEntry
-            style={{ 
-              borderWidth: 1,
-              marginBottom: 20,
-              padding: 10,
-              borderRadius: 5
-            }}
+            style={{ borderWidth: 1, marginBottom: 20, padding: 10, borderRadius: 5 }}
           />
           <TouchableOpacity
             onPress={() => setPickerVisible(true)}
-            style={{
-              borderWidth: 1,
-              marginBottom: 20,
-              padding: 10,
-              borderRadius: 5,
-              justifyContent: 'center',
-              alignItems: 'center',
-              backgroundColor: '#f0f0f0'
-            }}
+            style={{ borderWidth: 1, marginBottom: 20, padding: 10, borderRadius: 5, justifyContent: 'center', alignItems: 'center', backgroundColor: '#f0f0f0' }}
           >
             <Text style={{ color: '#555' }}>{cargo || 'Selecione o Cargo'}</Text>
           </TouchableOpacity>
@@ -235,24 +175,14 @@ export default function Home() {
             placeholder="Email"
             value={email}
             onChangeText={setEmail}
-            style={{ 
-              borderWidth: 1,
-              marginBottom: 10,
-              padding: 10,
-              borderRadius: 5
-            }}
+            style={{ borderWidth: 1, marginBottom: 10, padding: 10, borderRadius: 5 }}
           />
           <TextInput
             placeholder="Senha"
             value={senha}
             onChangeText={setSenha}
             secureTextEntry
-            style={{ 
-              borderWidth: 1,
-              marginBottom: 20,
-              padding: 10,
-              borderRadius: 5
-            }}
+            style={{ borderWidth: 1, marginBottom: 20, padding: 10, borderRadius: 5 }}
           />
           <TouchableOpacity onPress={handleSignIn} style={{ backgroundColor: '#40FF01', padding: 15, borderRadius: 10 }}>
             <Text style={{ textAlign: 'center', color: '#fff', fontWeight: 'bold' }}>Entrar</Text>

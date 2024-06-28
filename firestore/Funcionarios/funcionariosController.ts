@@ -9,7 +9,10 @@ export const getFuncionarios = async (): Promise<FuncionarioDTO[]> => {
     const data = doc.data();
     return {
       id: doc.id,
+      employeeId: data.employeeId, // Certifique-se de que employeeId está sendo corretamente mapeado
       nome: data.nome,
+      email: data.email,
+      dataNascimento: data.dataNascimento,
       cargo: data.cargo,
     } as FuncionarioDTO;
   });

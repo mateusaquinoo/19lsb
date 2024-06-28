@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { ClientDTO } from '../../../firestore/Cliente/clienteDTO';
-import { getDoc, doc, getDocs, collection } from 'firebase/firestore';
+import { getDocs, collection } from 'firebase/firestore';
 import { db } from '../../../config/firebase';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
@@ -69,10 +69,10 @@ export default function DemandaCliente() {
                     <MaterialCommunityIcons name="arrow-left" size={24} color="#40FF01" />
                     <Text style={styles.backButtonText}>Voltar</Text>
                 </TouchableOpacity>
-                <Text style={styles.title}>{cliente.nome}</Text>
+                <Text style={styles.clientName}>{cliente.nome}</Text>
             </View>
             <ScrollView contentContainerStyle={styles.scrollViewContent}>
-                <Text style={styles.sectionTitle}>Eventos:</Text>
+                <Text style={styles.sectionTitle}>Demandas:</Text>
                 {uniqueEventos.length > 0 ? (
                     uniqueEventos.map((evento: EventDTO, index: number) => {
                         const employeeName = employees.find(e => e.id === evento.employee)?.nome || 'Desconhecido';
@@ -81,6 +81,7 @@ export default function DemandaCliente() {
                                 <Text style={styles.eventText}>Título: {evento.title}</Text>
                                 <Text style={styles.eventText}>Data: {evento.date}</Text>
                                 <Text style={styles.eventText}>Hora: {evento.time}</Text>
+                                <Text style={styles.eventText}>Responsável: {employeeName}</Text>
                             </View>
                         );
                     })
@@ -100,8 +101,8 @@ const styles = StyleSheet.create({
         backgroundColor: 'white',
     },
     header: {
-        flexDirection: 'row',
-        alignItems: 'center',
+        flexDirection: 'column',
+        alignItems: 'flex-start',
         marginBottom: 20,
     },
     backButton: {
@@ -114,13 +115,11 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         color: '#000',
     },
-    title: {
-        fontSize: 24,
-        fontWeight: 'bold',
-        marginBottom: 20,
+    clientName: {
+        fontSize: 28,
         color: '#000',
-        textAlign: 'center',
-        flex: 1,
+        marginTop: 10,
+        fontWeight: 'bold',
     },
     scrollViewContent: {
         paddingBottom: 20,

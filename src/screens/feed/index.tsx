@@ -5,7 +5,7 @@ import { ImageBackground, StyleSheet, Text, TouchableOpacity, View, Dimensions, 
 import { Image } from "expo-image";
 import { useNavigation } from '@react-navigation/native';
 import { signOut } from 'firebase/auth';
-import { doc, getDoc, updateDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, setDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import * as ImagePicker from 'expo-image-picker';
 import { Modalize } from 'react-native-modalize';
 import { auth, db, storage } from '../../../config/firebase'; // Certifique-se de importar corretamente
@@ -22,17 +22,16 @@ export default function Feed() {
         const getUserProfile = async () => {
             const user = auth.currentUser;
             if (user) {
-                const docRef = doc(db, 'users', user.uid);
-                const docSnap = await getDoc(docRef);
-
-                if (docSnap.exists()) {
-                    const userData = docSnap.data();
-                    setFirstName(userData.firstName || '');
+                const q = query(collection(db, 'funcionarios'), where('id', '==', user.uid));
+                const querySnapshot = await getDocs(q);
+                if (!querySnapshot.empty) {
+                    const userData = querySnapshot.docs[0].data();
+                    setFirstName(userData.nome || '');
                     setProfileImage(userData.profileImage || profileImage);
                 } else {
                     // Se o documento não existe, cria um novo documento com dados padrão
-                    await setDoc(docRef, {
-                        firstName: '',
+                    await setDoc(doc(db, 'funcionarios', user.uid), {
+                        nome: '',
                         profileImage: profileImage
                     });
                 }
@@ -87,7 +86,7 @@ export default function Feed() {
                 async () => {
                     const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
                     setProfileImage(downloadURL);
-                    await updateDoc(doc(db, 'users', user.uid), { profileImage: downloadURL });
+                    await updateDoc(doc(db, 'funcionarios', user.uid), { profileImage: downloadURL });
                     setUploading(false);
                 }
             );
