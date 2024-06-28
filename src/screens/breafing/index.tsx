@@ -1,151 +1,258 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import React, { useState, useEffect, useRef } from 'react';
+import { Text, TouchableOpacity, View, TextInput, FlatList, Alert } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { ClientDTO } from '../../../firestore/Cliente/clienteDTO';
-import { getDocs, collection } from 'firebase/firestore';
+import { updateDoc, doc, getDoc } from 'firebase/firestore';
 import { db } from '../../../config/firebase';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { Modalize } from 'react-native-modalize';
 
 type RootStackParamList = {
-    DemandaCliente: { cliente: ClientDTO };
+    BriefingCliente: { cliente: ClientDTO };
+    ServicosCliente: { cliente: ClientDTO };
 };
 
-type DemandaClienteRouteProp = RouteProp<RootStackParamList, 'DemandaCliente'>;
+type BriefingClienteRouteProp = RouteProp<RootStackParamList, 'BriefingCliente'>;
 
-interface EventDTO {
-    title: string;
-    date: string;
-    time: string;
-    employee: string;
+interface Briefing {
+    id: string;
+    objetivo: string;
+    descricao: string;
+    prazo: string;
+    data: string;
 }
 
-export default function DemandaCliente() {
+export default function BriefingCliente() {
     const navigation = useNavigation();
-    const route = useRoute<DemandaClienteRouteProp>();
+    const route = useRoute<BriefingClienteRouteProp>();
     const { cliente } = route.params;
 
-    const [employees, setEmployees] = useState<{ id: string; nome: string }[]>([]);
-    const [loading, setLoading] = useState(true);
+    const [briefing, setBriefing] = useState<Briefing[]>(cliente.briefing || []);
+    const [objetivo, setObjetivo] = useState('');
+    const [descricao, setDescricao] = useState('');
+    const [prazo, setPrazo] = useState('');
+    const [currentBriefingId, setCurrentBriefingId] = useState<string | null>(null);
+    const modalizeRef = useRef<Modalize>(null);
 
     useEffect(() => {
-        const fetchEmployees = async () => {
-            try {
-                const employeesSnapshot = await getDocs(collection(db, 'funcionarios'));
-                const employeesList = employeesSnapshot.docs.map(doc => {
-                    const data = doc.data();
-                    return { id: doc.id, nome: data.nome };
-                });
-                setEmployees(employeesList);
-            } catch (error) {
-                console.error('Error fetching employees:', error);
-            } finally {
-                setLoading(false);
+        const fetchCliente = async () => {
+            if (cliente.id) {
+                const clienteDoc = doc(db, 'clientes', cliente.id);
+                const docSnap = await getDoc(clienteDoc);
+                if (docSnap.exists()) {
+                    const clienteData = docSnap.data() as ClientDTO;
+                    setBriefing(clienteData.briefing || []);
+                }
             }
         };
 
-        fetchEmployees();
-    }, []);
+        fetchCliente();
+    }, [cliente.id]);
 
-    if (loading) {
-        return <Text>Carregando...</Text>;
-    }
+    const handleAddBriefing = async () => {
+        const novoBriefing: Briefing = {
+            id: Math.random().toString(36).substring(7),
+            objetivo,
+            descricao,
+            prazo,
+            data: new Date().toLocaleDateString()
+        };
 
-    if (!cliente) {
-        return <Text>Cliente não encontrado.</Text>;
-    }
+        const updatedBriefing = [...briefing, novoBriefing];
+        setBriefing(updatedBriefing);
 
-    // Verifica se a propriedade eventos existe e é um array
-    const eventos = cliente.eventos && Array.isArray(cliente.eventos) ? cliente.eventos : [];
+        if (cliente.id) {
+            const clienteDoc = doc(db, 'clientes', cliente.id);
+            await updateDoc(clienteDoc, { briefing: updatedBriefing });
+        }
 
-    // Remove eventos duplicados
-    const uniqueEventos = Array.from(new Set(eventos.map((evento: any) => JSON.stringify(evento)))).map(e => JSON.parse(e));
+        setObjetivo('');
+        setDescricao('');
+        setPrazo('');
+        modalizeRef.current?.close();
+    };
+
+    const handleEditBriefing = async () => {
+        if (!currentBriefingId) return;
+
+        const updatedBriefing = briefing.map((item) => 
+            item.id === currentBriefingId ? { ...item, objetivo, descricao, prazo } : item
+        );
+        setBriefing(updatedBriefing);
+
+        if (cliente.id) {
+            const clienteDoc = doc(db, 'clientes', cliente.id);
+            await updateDoc(clienteDoc, { briefing: updatedBriefing });
+        }
+
+        setObjetivo('');
+        setDescricao('');
+        setPrazo('');
+        setCurrentBriefingId(null);
+        modalizeRef.current?.close();
+    };
+
+    const handleDeleteBriefing = async (id: string) => {
+        const updatedBriefing = briefing.filter((item) => item.id !== id);
+        setBriefing(updatedBriefing);
+
+        if (cliente.id) {
+            const clienteDoc = doc(db, 'clientes', cliente.id);
+            await updateDoc(clienteDoc, { briefing: updatedBriefing });
+        }
+    };
+
+    const openEditModal = (item: Briefing) => {
+        setObjetivo(item.objetivo);
+        setDescricao(item.descricao);
+        setPrazo(item.prazo);
+        setCurrentBriefingId(item.id);
+        modalizeRef.current?.open();
+    };
+
+    const confirmDeleteBriefing = (id: string) => {
+        Alert.alert(
+            "Excluir Briefing",
+            "Você tem certeza que deseja excluir este briefing?",
+            [
+                {
+                    text: "Não",
+                    style: "cancel"
+                },
+                {
+                    text: "Sim",
+                    onPress: () => handleDeleteBriefing(id)
+                }
+            ]
+        );
+    };
 
     return (
-        <View style={styles.container}>
-            <View style={styles.header}>
-                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+        <View style={{
+            flex: 1,
+            paddingHorizontal: 20,
+            paddingVertical: 80,
+            backgroundColor: '#fff'
+        }}>
+            <View
+                style={{
+                    display: "flex",
+                    flexDirection: "row",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                }}
+            >
+                <TouchableOpacity
+                    onPress={() => navigation.goBack()}
+                    style={{
+                        display: "flex",
+                        flexDirection: "row",
+                        alignItems: "center",
+                    }}
+                >
                     <MaterialCommunityIcons name="arrow-left" size={24} color="#40FF01" />
-                    <Text style={styles.backButtonText}>Voltar</Text>
+                    <Text
+                        style={{
+                            marginLeft: 10,
+                            fontSize: 24,
+                            fontWeight: "bold",
+                            color: "#000",
+                        }}
+                    >
+                        Voltar
+                    </Text>
                 </TouchableOpacity>
-                <Text style={styles.title}>{cliente.nome}</Text>
             </View>
-            <ScrollView contentContainerStyle={styles.scrollViewContent}>
-                <Text style={styles.sectionTitle}>Eventos:</Text>
-                {uniqueEventos.length > 0 ? (
-                    uniqueEventos.map((evento: EventDTO, index: number) => {
-                        const employeeName = employees.find(e => e.id === evento.employee)?.nome || 'Desconhecido';
-                        return (
-                            <View key={index} style={styles.eventContainer}>
-                                <Text style={styles.eventText}>Título: {evento.title}</Text>
-                                <Text style={styles.eventText}>Data: {evento.date}</Text>
-                                <Text style={styles.eventText}>Hora: {evento.time}</Text>
-                                <Text style={styles.eventText}>Responsável: {employeeName}</Text>
+
+            <View style={{ marginTop: 20 }}>
+                <Text style={{ fontSize: 28, fontWeight: 'bold' }}>{cliente.nome}</Text>
+                <Text style={{ fontSize: 20, fontWeight: 'bold', marginBottom: 10, marginTop: 10 }}>Briefing:</Text>
+
+                <FlatList
+                    data={briefing}
+                    keyExtractor={(item) => item.id}
+                    renderItem={({ item }) => (
+                        <View style={{ padding: 15, backgroundColor: '#f0f0f0', borderRadius: 10, marginBottom: 10 }}>
+                            <Text style={{ fontSize: 18, color: '#000' }}>Objetivo: {item.objetivo}</Text>
+                            <Text style={{ fontSize: 16, color: '#555' }}>Descrição: {item.descricao}</Text>
+                            <Text style={{ fontSize: 16, color: '#555' }}>Prazo: {item.prazo}</Text>
+                            <Text style={{ fontSize: 14, color: '#888' }}>Adicionado em: {item.data}</Text>
+                            <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginTop: 10 }}>
+                                <TouchableOpacity
+                                    onPress={() => openEditModal(item)}
+                                    style={{ marginRight: 10 }}>
+                                     <Text style={{ color: '#007bff' }}>Editar</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                    onPress={() => confirmDeleteBriefing(item.id)}
+                                >
+                                    <Text style={{ color: '#dc3545' }}>Excluir</Text>
+                                </TouchableOpacity>
                             </View>
-                        );
-                    })
-                ) : (
-                    <Text style={styles.noEventText}>Nenhum evento registrado.</Text>
-                )}
-            </ScrollView>
+                        </View>
+                    )}
+                />
+            </View>
+
+            <Modalize ref={modalizeRef} adjustToContentHeight>
+                <View style={{ padding: 20 }}>
+                    <Text style={{ fontSize: 20, fontWeight: 'bold', marginBottom: 20 }}>{currentBriefingId ? 'Editar Briefing' : 'Adicionar Briefing'}</Text>
+                    <TextInput
+                        placeholder="Objetivo"
+                        value={objetivo}
+                        onChangeText={setObjetivo}
+                        style={{
+                            borderWidth: 1,
+                            marginBottom: 10,
+                            padding: 10,
+                            borderRadius: 5
+                        }}
+                    />
+                    <TextInput
+                        placeholder="Descrição"
+                        value={descricao}
+                        onChangeText={setDescricao}
+                        style={{
+                            borderWidth: 1,
+                            marginBottom: 10,
+                            padding: 10,
+                            borderRadius: 5
+                        }}
+                    />
+                    <TextInput
+                        placeholder="Prazo"
+                        value={prazo}
+                        onChangeText={setPrazo}
+                        style={{
+                            borderWidth: 1,
+                            marginBottom: 10,
+                            padding: 10,
+                            borderRadius: 5
+                        }}
+                    />
+                    <TouchableOpacity onPress={currentBriefingId ? handleEditBriefing : handleAddBriefing} style={{ backgroundColor: '#40FF01', padding: 15, borderRadius: 10 }}>
+                        <Text style={{ textAlign: 'center', color: '#fff', fontWeight: 'bold' }}>{currentBriefingId ? 'Salvar Alterações' : 'Adicionar'}</Text>
+                    </TouchableOpacity>
+                   
+                </View>
+            </Modalize>
+
+            <TouchableOpacity
+                style={{
+                    position: 'absolute',
+                    bottom: 30,
+                    right: 30,
+                    backgroundColor: '#40FF01',
+                    width: 60,
+                    height: 60,
+                    borderRadius: 30,
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                }}
+                onPress={() => modalizeRef.current?.open()}
+            >
+                <Ionicons name="add" size={30} color="#fff" />
+            </TouchableOpacity>
         </View>
     );
 }
-
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        paddingHorizontal: 20,
-        paddingVertical: 80,
-        backgroundColor: 'white',
-    },
-    header: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: 20,
-    },
-    backButton: {
-        flexDirection: 'row',
-        alignItems: 'center',
-    },
-    backButtonText: {
-        marginLeft: 10,
-        fontSize: 24,
-        fontWeight: 'bold',
-        color: '#000',
-    },
-    title: {
-        fontSize: 24,
-        fontWeight: 'bold',
-        marginBottom: 20,
-        color: '#000',
-        textAlign: 'center',
-        flex: 1,
-    },
-    scrollViewContent: {
-        paddingBottom: 20,
-    },
-    sectionTitle: {
-        fontSize: 20,
-        fontWeight: 'bold',
-        marginBottom: 10,
-        color: '#000',
-    },
-    eventContainer: {
-        padding: 15,
-        backgroundColor: '#f0f0f0',
-        borderRadius: 10,
-        marginBottom: 10,
-        borderWidth: 1,
-        borderColor: '#40FF01',
-    },
-    eventText: {
-        fontSize: 16,
-        color: '#000',
-    },
-    noEventText: {
-        fontSize: 16,
-        color: '#555',
-        textAlign: 'center',
-        marginTop: 20,
-    },
-});
