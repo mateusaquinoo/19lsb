@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, Modal, ImageBackground, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, ImageBackground, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from "firebase/auth";
 import { doc, setDoc } from 'firebase/firestore';
@@ -99,7 +99,10 @@ export default function Home() {
             </ImageBackground>
 
             <Modalize ref={signUpModalRef} adjustToContentHeight>
-                <View style={styles.modalContent}>
+                <KeyboardAvoidingView
+                    behavior={Platform.OS === "ios" ? "padding" : "height"}
+                    style={styles.modalContent}
+                >
                     <TextInput 
                         placeholder="Nome" 
                         value={nome} 
@@ -126,17 +129,34 @@ export default function Home() {
                     <TouchableOpacity onPress={handleSignUp} style={styles.submitButton}>
                         <Text style={styles.submitButtonText}>Cadastrar</Text>
                     </TouchableOpacity>
-                </View>
+                </KeyboardAvoidingView>
             </Modalize>
 
             <Modalize ref={signInModalRef} adjustToContentHeight>
-                <View style={styles.modalContent}>
-                    <TextInput placeholder="Email" value={email} onChangeText={setEmail} style={styles.inputField} />
-                    <TextInput placeholder="Senha" value={senha} onChangeText={setSenha} secureTextEntry style={styles.inputField} />
+                <KeyboardAvoidingView
+                    behavior={Platform.OS === "ios" ? "padding" : "height"}
+                    style={styles.modalContent}
+                >
+                    <TextInput
+                        placeholder="Email"
+                        value={email}
+                        onChangeText={setEmail}
+                        style={styles.inputField}
+                        keyboardType="email-address"
+                        autoCapitalize="none"
+                        autoCorrect={false}
+                    />
+                    <TextInput
+                        placeholder="Senha"
+                        value={senha}
+                        onChangeText={setSenha}
+                        secureTextEntry
+                        style={styles.inputField}
+                    />
                     <TouchableOpacity onPress={handleSignIn} style={styles.submitButton}>
                         <Text style={styles.submitButtonText}>Entrar</Text>
                     </TouchableOpacity>
-                </View>
+                </KeyboardAvoidingView>
             </Modalize>
 
             <Modalize ref={pickerModalRef} adjustToContentHeight>
@@ -199,6 +219,7 @@ const styles = StyleSheet.create({
     },
     modalContent: {
         padding: 20,
+        marginBottom: 20,  
     },
     inputField: {
         borderWidth: 1,
@@ -228,7 +249,7 @@ const styles = StyleSheet.create({
         padding: 10,
         alignItems: 'center',
         backgroundColor: '#ccc',
-        borderRadius: 5, 
+        borderRadius: 5,
         borderWidth: 1,
         borderColor: '#40FF01',
     },

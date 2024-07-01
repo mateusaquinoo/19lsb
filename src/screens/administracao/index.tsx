@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, Alert } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { useNavigation } from '@react-navigation/native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -7,8 +7,11 @@ import { PontoDTO } from '../../../firestore/Ponto/pontoDTO';
 import { FuncionarioDTO } from '../../../firestore/Funcionarios/funcionariosDTO';
 import { getFuncionarios } from '../../../firestore/Funcionarios/funcionariosController';
 import { getPontos } from '../../../firestore/Ponto/pontoController';
+import { Modalize } from 'react-native-modalize';
 
 type FiltroPonto = 'todos' | 'atrasados' | 'no prazo';
+
+const PASSWORD = 'lsbmateusluca'; // Defina a senha aqui
 
 export default function GerenciarPontos() {
     const navigation = useNavigation();
@@ -17,6 +20,9 @@ export default function GerenciarPontos() {
     const [pontos, setPontos] = useState<PontoDTO[]>([]);
     const [filteredPontos, setFilteredPontos] = useState<PontoDTO[]>([]);
     const [filtro, setFiltro] = useState<FiltroPonto>('todos');
+    const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const [password, setPassword] = useState('');
+    const modalizeRef = useRef<Modalize>(null);
 
     useEffect(() => {
         const fetchFuncionarios = async () => {
@@ -54,6 +60,36 @@ export default function GerenciarPontos() {
         }
     };
 
+    const openPicker = () => {
+        modalizeRef.current?.open();
+    };
+
+    const handlePasswordSubmit = () => {
+        if (password === PASSWORD) {
+            setIsAuthenticated(true);
+        } else {
+            Alert.alert('Senha Incorreta', 'A senha que você digitou está incorreta. Tente novamente.');
+        }
+    };
+
+    if (!isAuthenticated) {
+        return (
+            <View style={styles.container}>
+                <Text style={styles.passwordTitle}>Digite a Senha para Acessar</Text>
+                <TextInput
+                    style={styles.input}
+                    secureTextEntry
+                    placeholder="Senha"
+                    value={password}
+                    onChangeText={setPassword}
+                />
+                <TouchableOpacity style={styles.submitButton} onPress={handlePasswordSubmit}>
+                    <Text style={styles.submitButtonText}>Entrar</Text>
+                </TouchableOpacity>
+            </View>
+        );
+    }
+
     return (
         <View style={styles.container}>
             <View style={styles.header}>
@@ -63,20 +99,13 @@ export default function GerenciarPontos() {
                 </TouchableOpacity>
             </View>
             <Text style={styles.title}>Gerenciar Pontos</Text>
-            <Picker
-                selectedValue={selectedFuncionario}
-                onValueChange={(itemValue) => setSelectedFuncionario(itemValue)}
-                style={styles.picker}
-            >
-                {funcionarios.map(funcionario => (
-                    <Picker.Item key={funcionario.id} label={funcionario.nome} value={funcionario.id} />
-                ))}
-            </Picker>
+            <TouchableOpacity style={styles.pickerButton} onPress={openPicker}>
+                <Text style={styles.pickerButtonText}>
+                    {selectedFuncionario ? funcionarios.find(func => func.id === selectedFuncionario)?.nome : 'Selecione o Funcionário'}
+                </Text>
+            </TouchableOpacity>
 
             <View style={styles.buttonContainer}>
-                <TouchableOpacity style={styles.button} onPress={() => filterPontos('todos')}>
-                    <Text style={styles.buttonText}>Todos os Pontos</Text>
-                </TouchableOpacity>
                 <TouchableOpacity style={styles.button} onPress={() => filterPontos('atrasados')}>
                     <Text style={styles.buttonText}>Pontos em Atraso</Text>
                 </TouchableOpacity>
@@ -89,10 +118,29 @@ export default function GerenciarPontos() {
                 {filteredPontos.map(ponto => (
                     <View key={ponto.id} style={styles.pontoItem}>
                         <Text>Data e Hora: {new Date(ponto.horario).toLocaleString()}</Text>
-                        <Text>Status: {ponto.atrasado ? 'Atrasado' : 'No Prazo'}</Text>
+                        <Text style={ponto.atrasado ? styles.atrasadoText : styles.noPrazoText}>
+                            Status: {ponto.atrasado ? 'Atrasado' : 'No Prazo'}
+                        </Text>
                     </View>
                 ))}
             </ScrollView>
+
+            <Modalize ref={modalizeRef} adjustToContentHeight>
+                <View style={styles.modalContent}>
+                    <Picker
+                        selectedValue={selectedFuncionario}
+                        onValueChange={(itemValue) => {
+                            setSelectedFuncionario(itemValue);
+                            modalizeRef.current?.close();
+                        }}
+                        style={styles.picker}
+                    >
+                        {funcionarios.map(funcionario => (
+                            <Picker.Item key={funcionario.id} label={funcionario.nome} value={funcionario.id} />
+                        ))}
+                    </Picker>
+                </View>
+            </Modalize>
         </View>
     );
 }
@@ -125,8 +173,18 @@ const styles = StyleSheet.create({
         marginBottom: 20,
         textAlign: 'center',
     },
-    picker: {
+    pickerButton: {
+        backgroundColor: '#f0f0f0',
+        padding: 15,
+        borderRadius: 10,
+        justifyContent: 'center',
+        alignItems: 'center',
         marginBottom: 20,
+        borderColor: '#40FF01',
+        borderWidth: 1,
+    },
+    pickerButtonText: {
+        color: '#555',
     },
     buttonContainer: {
         flexDirection: 'row',
@@ -151,5 +209,39 @@ const styles = StyleSheet.create({
         marginBottom: 10,
         borderWidth: 1,
         borderColor: '#40FF01',
+    },
+    atrasadoText: {
+        color: 'red',
+    },
+    noPrazoText: {
+        color: 'green',
+    },
+    modalContent: {
+        padding: 20,
+    },
+    picker: {
+        width: '100%',
+    },
+    passwordTitle: {
+        fontSize: 24,
+        fontWeight: 'bold',
+        textAlign: 'center',
+        marginBottom: 20,
+    },
+    input: {
+        borderWidth: 1,
+        padding: 10,
+        borderRadius: 5,
+        marginBottom: 20,
+    },
+    submitButton: {
+        backgroundColor: '#40FF01',
+        padding: 15,
+        borderRadius: 10,
+        alignItems: 'center',
+    },
+    submitButtonText: {
+        color: '#fff',
+        fontWeight: 'bold',
     },
 });

@@ -146,7 +146,9 @@ export default function Feed() {
                             Este é o painel lsb
                         </Text>
                     </View>
-                    <Pressable onPress={openModal}>
+                    <TouchableOpacity onPress={openModal}
+                    style={{ borderWidth: 1, borderRadius: 40, borderColor: "#40FF01", backgroundColor: "#BDBCBB"}}
+                    >
                         <Image
                             style={{
                                 height: 40,
@@ -157,7 +159,7 @@ export default function Feed() {
                             }}
                             source={{ uri: profileImage }}
                         />
-                    </Pressable>
+                    </TouchableOpacity>
                 </View>
                 <View
                     style={{

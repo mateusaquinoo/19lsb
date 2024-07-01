@@ -21,7 +21,8 @@ export default function Cliente() {
     useEffect(() => {
         const fetchClients = async () => {
             const clients = await getClients();
-            setClientes(clients);
+            const sortedClients = clients.sort((a, b) => a.nome.localeCompare(b.nome)); // Ordena os clientes em ordem alfabética
+            setClientes(sortedClients);
         };
         fetchClients();
     }, []);
@@ -47,7 +48,8 @@ export default function Cliente() {
             reuniao: [],
         };
         const addedClient = await addClient(newClient);
-        setClientes([...clientes, addedClient]);
+        const updatedClients = [...clientes, addedClient].sort((a, b) => a.nome.localeCompare(b.nome)); // Ordena a lista após adicionar um novo cliente
+        setClientes(updatedClients);
         setNome('');
         setDataEntrada('');
         setTempoContrato('');
