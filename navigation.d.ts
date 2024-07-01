@@ -18,6 +18,7 @@ export declare global {
             Ponto: undefined; // Adicionei esta 
             GerenciarAvisos: undefined; // Adicionei esta
             GerenciarPontos: undefined; // Adicionei esta
+            PontosBatidos: undefined; // Adicionei esta
         }
     }
 }

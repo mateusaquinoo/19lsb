@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, Modal, ScrollView, ImageBackground } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, Modal, ImageBackground, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from "firebase/auth";
 import { doc, setDoc } from 'firebase/firestore';
@@ -7,20 +7,30 @@ import { auth, db } from '../../../config/firebase';
 import { Modalize } from 'react-native-modalize';
 import lsb from '../../../assets/TELA-2.png'; // Ajuste conforme seu caminho de imagem
 import { Picker } from '@react-native-picker/picker';
+import { TextInputMask } from 'react-native-masked-text';
 
 export default function Home() {
     const navigation = useNavigation();
-    const modalizeRef = useRef<Modalize>(null);
+    const signUpModalRef = useRef<Modalize>(null);
+    const signInModalRef = useRef<Modalize>(null);
+    const pickerModalRef = useRef<Modalize>(null);
     const [nome, setNome] = useState('');
     const [dataNascimento, setDataNascimento] = useState('');
     const [email, setEmail] = useState('');
     const [senha, setSenha] = useState('');
     const [confirmarSenha, setConfirmarSenha] = useState('');
     const [cargo, setCargo] = useState('');
-    const [pickerVisible, setPickerVisible] = useState(false);
 
     const openSignUpModal = () => {
-        modalizeRef.current?.open();
+        signUpModalRef.current?.open();
+    };
+
+    const openSignInModal = () => {
+        signInModalRef.current?.open();
+    };
+
+    const openPickerModal = () => {
+        pickerModalRef.current?.open();
     };
 
     const handleSignUp = async () => {
@@ -48,10 +58,10 @@ export default function Home() {
 
             console.log('Usuário criado com sucesso:', user);
             navigation.navigate("Feed");
-            modalizeRef.current?.close();
+            signUpModalRef.current?.close();
         } catch (error) {
             console.error("Erro ao criar conta:", error);
-            alert("Erro ao criar conta. Tente novamente.");
+            Alert.alert("Erro ao criar conta", (error as Error).message);
         }
     };
 
@@ -61,10 +71,18 @@ export default function Home() {
             const user = userCredential.user;
             console.log('Usuário logado com sucesso:', user);
             navigation.navigate("Feed");
+            signInModalRef.current?.close();
         } catch (error) {
             console.error("Erro ao entrar:", error);
-            alert("Erro ao entrar. Verifique suas credenciais e tente novamente.");
+            Alert.alert("Erro ao entrar", (error as Error).message);
         }
+    };
+
+    const handleNameChange = (text: string) => {
+        const formattedText = text
+            .replace(/[^a-zA-Z ]/g, '')  // Remove todos os caracteres não alfabéticos
+            .replace(/\b\w/g, (char) => char.toUpperCase());  // Torna a primeira letra de cada palavra maiúscula
+        setNome(formattedText);
     };
 
     return (
@@ -74,49 +92,69 @@ export default function Home() {
                     <TouchableOpacity onPress={openSignUpModal} style={styles.signUpButton}>
                         <Text style={styles.signUpText}>Cadastre-se</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity onPress={handleSignIn} style={styles.signInButton}>
+                    <TouchableOpacity onPress={openSignInModal} style={styles.signInButton}>
                         <Text style={styles.signInText}>Entrar</Text>
                     </TouchableOpacity>
                 </View>
             </ImageBackground>
 
-            <Modalize ref={modalizeRef} adjustToContentHeight>
+            <Modalize ref={signUpModalRef} adjustToContentHeight>
                 <View style={styles.modalContent}>
-                    <TextInput placeholder="Nome" value={nome} onChangeText={setNome} style={styles.inputField} />
-                    <TextInput placeholder="Data de Nascimento" value={dataNascimento} onChangeText={setDataNascimento} style={styles.inputField} />
+                    <TextInput 
+                        placeholder="Nome" 
+                        value={nome} 
+                        onChangeText={handleNameChange} 
+                        style={styles.inputField} 
+                    />
+                    <TextInputMask
+                        type={'datetime'}
+                        options={{
+                            format: 'DD/MM/YYYY'
+                        }}
+                        placeholder="Data de Nascimento"
+                        value={dataNascimento}
+                        onChangeText={setDataNascimento}
+                        style={styles.inputField}
+                        keyboardType="numeric"
+                    />
                     <TextInput placeholder="Email" value={email} onChangeText={setEmail} style={styles.inputField} />
                     <TextInput placeholder="Senha" value={senha} onChangeText={setSenha} secureTextEntry style={styles.inputField} />
                     <TextInput placeholder="Confirmar Senha" value={confirmarSenha} onChangeText={setConfirmarSenha} secureTextEntry style={styles.inputField} />
-                    <TouchableOpacity onPress={() => setPickerVisible(true)} style={styles.pickerButton}>
+                    <TouchableOpacity onPress={openPickerModal} style={styles.pickerButton}>
                         <Text style={styles.pickerButtonText}>{cargo || 'Selecione o Cargo'}</Text>
                     </TouchableOpacity>
-                    <Modal
-                        visible={pickerVisible}
-                        transparent={true}
-                        animationType="slide"
-                        onRequestClose={() => setPickerVisible(false)}
-                    >
-                        <View style={styles.pickerModal}>
-                            <Picker
-                                selectedValue={cargo}
-                                onValueChange={(itemValue) => {
-                                    setCargo(itemValue);
-                                }}
-                                style={styles.picker}
-                            >
-                                <Picker.Item label="Designer" value="Designer" />
-                                <Picker.Item label="Gestor de Tráfego" value="Gestor de Tráfego" />
-                                <Picker.Item label="Editor de Vídeos" value="Editor de Vídeos" />
-                                <Picker.Item label="Programador" value="Programador" />
-                                <Picker.Item label="Administração" value="Administração" />
-                            </Picker>
-                            <TouchableOpacity style={styles.closePickerButton} onPress={() => setPickerVisible(false)}>
-                                <Text style={styles.closePickerButtonText}>Fechar</Text>
-                            </TouchableOpacity>
-                        </View>
-                    </Modal>
                     <TouchableOpacity onPress={handleSignUp} style={styles.submitButton}>
                         <Text style={styles.submitButtonText}>Cadastrar</Text>
+                    </TouchableOpacity>
+                </View>
+            </Modalize>
+
+            <Modalize ref={signInModalRef} adjustToContentHeight>
+                <View style={styles.modalContent}>
+                    <TextInput placeholder="Email" value={email} onChangeText={setEmail} style={styles.inputField} />
+                    <TextInput placeholder="Senha" value={senha} onChangeText={setSenha} secureTextEntry style={styles.inputField} />
+                    <TouchableOpacity onPress={handleSignIn} style={styles.submitButton}>
+                        <Text style={styles.submitButtonText}>Entrar</Text>
+                    </TouchableOpacity>
+                </View>
+            </Modalize>
+
+            <Modalize ref={pickerModalRef} adjustToContentHeight>
+                <View style={styles.pickerModal}>
+                    <Picker
+                        selectedValue={cargo}
+                        onValueChange={(itemValue) => setCargo(itemValue)}
+                        style={styles.picker}
+                    >
+                        <Picker.Item label="Selecione o Cargo" value="" />
+                        <Picker.Item label="Designer" value="Designer" />
+                        <Picker.Item label="Gestor de Tráfego" value="Gestor de Tráfego" />
+                        <Picker.Item label="Editor de Vídeos" value="Editor de Vídeos" />
+                        <Picker.Item label="Programador" value="Programador" />
+                        <Picker.Item label="Administração" value="Administração" />
+                    </Picker>
+                    <TouchableOpacity style={styles.closePickerButton} onPress={() => pickerModalRef.current?.close()}>
+                        <Text style={styles.closePickerButtonText}>Fechar</Text>
                     </TouchableOpacity>
                 </View>
             </Modalize>
@@ -181,10 +219,7 @@ const styles = StyleSheet.create({
         color: '#555',
     },
     pickerModal: {
-        backgroundColor: 'white',
         padding: 20,
-        borderTopLeftRadius: 20,
-        borderTopRightRadius: 20,
     },
     picker: {
         width: '100%',
@@ -193,6 +228,9 @@ const styles = StyleSheet.create({
         padding: 10,
         alignItems: 'center',
         backgroundColor: '#ccc',
+        borderRadius: 5, 
+        borderWidth: 1,
+        borderColor: '#40FF01',
     },
     closePickerButtonText: {
         color: 'black',

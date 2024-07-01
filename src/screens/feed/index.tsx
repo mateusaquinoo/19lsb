@@ -152,6 +152,8 @@ export default function Feed() {
                                 height: 40,
                                 width: 40,
                                 borderRadius: 40,
+                                borderWidth: 1,
+                                borderColor: "#40FF01",
                             }}
                             source={{ uri: profileImage }}
                         />
@@ -568,14 +570,14 @@ export default function Feed() {
 
             <Modalize ref={modalizeRef} adjustToContentHeight>
                 <View style={{ padding: 20 }}>
-                    <TouchableOpacity onPress={pickImage} style={{ backgroundColor: '#40FF01', padding: 15, borderRadius: 10, marginBottom: 10 }}>
+                    <TouchableOpacity onPress={pickImage} style={{ backgroundColor: '#999', padding: 10, borderRadius: 10, marginBottom: 10, borderWidth:1, borderColor:'#40FF01' }}>
                         {uploading ? (
                             <ActivityIndicator size="small" color="#fff" />
                         ) : (
                             <Text style={{ textAlign: 'center', color: '#fff', fontWeight: 'bold' }}>Adicionar Foto de Perfil</Text>
                         )}
                     </TouchableOpacity>
-                    <TouchableOpacity onPress={changePassword} style={{ backgroundColor: '#40FF01', padding: 15, borderRadius: 10, marginBottom: 10 }}>
+                    <TouchableOpacity onPress={changePassword} style={{ backgroundColor: '#999', padding: 10, borderRadius: 10, marginBottom: 10, borderWidth:1, borderColor:'#40FF01' }}>
                         <Text style={{ textAlign: 'center', color: '#fff', fontWeight: 'bold' }}>Alterar Senha</Text>
                     </TouchableOpacity>
                     <TouchableOpacity onPress={handleSignOut} style={{ backgroundColor: '#FF0000', padding: 15, borderRadius: 10 }}>

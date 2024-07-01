@@ -35,6 +35,11 @@ export default function Avisos() {
         }
     };
 
+    const formatDate = (dateString: string) => {
+        const [year, month, day] = dateString.split('-');
+        return `${day}/${month}/${year}`;
+    };
+
     return (
         <View style={styles.container}>
             <View style={styles.header}>
@@ -51,11 +56,11 @@ export default function Avisos() {
                     <View style={styles.avisoContainer}>
                         <Text style={styles.avisoTitle}>Título: {item.title}</Text>
                         <Text style={styles.avisoDetails}>Cliente: {item.client}</Text>
-                        <Text style={styles.avisoDetails}>Data: {item.date}</Text>
+                        <Text style={styles.avisoDetails}>Data: {formatDate(item.date)}</Text>
                         <Text style={styles.avisoDetails}>Hora: {item.time}</Text>
                         {!item.completed && (
                             <TouchableOpacity
-                                onPress={() => handleConcluirAviso(item.id??'')}
+                                onPress={() => handleConcluirAviso(item.id ?? '')}
                                 style={styles.concluirButton}
                             >
                                 <Text style={styles.concluirButtonText}>Concluir</Text>

@@ -1,15 +1,15 @@
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import React, { useState, useEffect, useRef } from 'react';
-import { Text, TouchableOpacity, View, Dimensions, TextInput, ScrollView, StyleSheet } from 'react-native';
+import { Text, TouchableOpacity, View, TextInput, ScrollView, StyleSheet } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Modalize } from 'react-native-modalize';
 import { ClientDTO } from '../../../firestore/Cliente/clienteDTO';
 import { addClient, getClients } from '../../../firestore/Cliente/clienteController';
+import { TextInputMask } from 'react-native-masked-text';
 
 export default function Cliente() {
     const navigation = useNavigation();
     const modalizeRef = useRef<Modalize>(null);
-    const serviceModalizeRef = useRef<Modalize>(null);
     const contractPickerRef = useRef<Modalize>(null);
     const [clientes, setClientes] = useState<ClientDTO[]>([]);
     const [nome, setNome] = useState('');
@@ -17,7 +17,6 @@ export default function Cliente() {
     const [tempoContrato, setTempoContrato] = useState('');
     const [valor, setValor] = useState('');
     const [servicos, setServicos] = useState<string[]>([]);
-    const [newService, setNewService] = useState('');
 
     useEffect(() => {
         const fetchClients = async () => {
@@ -31,18 +30,8 @@ export default function Cliente() {
         modalizeRef.current?.open();
     };
 
-    const openServiceModal = () => {
-        serviceModalizeRef.current?.open();
-    };
-
     const openContractPicker = () => {
         contractPickerRef.current?.open();
-    };
-
-    const handleAddService = () => {
-        setServicos([...servicos, newService]);
-        setNewService('');
-        serviceModalizeRef.current?.close();
     };
 
     const handleAddClient = async () => {
@@ -56,7 +45,6 @@ export default function Cliente() {
             briefing: [],
             demandas: [],
             reuniao: [],
-            
         };
         const addedClient = await addClient(newClient);
         setClientes([...clientes, addedClient]);
@@ -71,6 +59,13 @@ export default function Cliente() {
     const handleSelectContractTime = (time: string) => {
         setTempoContrato(time);
         contractPickerRef.current?.close();
+    };
+
+    const handleNameChange = (text: string) => {
+        const formattedText = text
+            .replace(/[^a-zA-Z ]/g, '')  // Remove todos os caracteres não alfabéticos
+            .replace(/\b\w/g, (char) => char.toUpperCase());  // Torna a primeira letra de cada palavra maiúscula
+        setNome(formattedText);
     };
 
     const renderButton = (cliente: ClientDTO, index: number) => (
@@ -114,27 +109,33 @@ export default function Cliente() {
                     <TextInput
                         placeholder="Nome do Cliente"
                         value={nome}
-                        onChangeText={setNome}
+                        onChangeText={handleNameChange}
                         style={styles.input}
                     />
-                    <TextInput
+                    <TextInputMask
+                        type={'datetime'}
+                        options={{
+                            format: 'DD/MM/YYYY'
+                        }}
                         placeholder="Data de Entrada"
                         value={dataEntrada}
                         onChangeText={setDataEntrada}
                         style={styles.input}
+                        keyboardType="numeric"
                     />
                     <TouchableOpacity onPress={openContractPicker} style={styles.pickerButton}>
                         <Text style={styles.pickerButtonText}>
                             {tempoContrato || 'Selecione o Tempo de Contrato'}
                         </Text>
                     </TouchableOpacity>
-                    <TextInput
+                    <TextInputMask
+                        type={'money'}
                         placeholder="Valor a Pagar"
                         value={valor}
                         onChangeText={setValor}
                         style={styles.input}
+                        keyboardType="numeric"
                     />
-                   
                     <TouchableOpacity onPress={handleAddClient} style={styles.submitButton}>
                         <Text style={styles.submitButtonText}>Adicionar</Text>
                     </TouchableOpacity>

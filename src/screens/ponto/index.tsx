@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { useNavigation } from '@react-navigation/native';
@@ -7,10 +7,9 @@ import { useAuth } from '../../auth/AuthProvider';
 import { addPonto, getPontos } from '../../../firestore/Ponto/pontoController';
 import { PontoDTO } from '../../../firestore/Ponto/pontoDTO';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { FlatList } from 'react-native-gesture-handler';
 
-const empresaLatitude = -16.7063946;
-const empresaLongitude = -49.2382167;
+const empresaLatitude = -16.704231734087685;
+const empresaLongitude = -49.23995908831295;
 
 type TipoPonto = 'entrada' | 'almoco' | 'retorno' | 'saida';
 
@@ -26,6 +25,7 @@ export default function Ponto() {
     const { user } = useAuth();
     const [location, setLocation] = useState<Location.LocationObject | null>(null);
     const [pontos, setPontos] = useState<PontoDTO[]>([]);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const fetchLocation = async () => {
@@ -45,7 +45,7 @@ export default function Ponto() {
             }
         };
 
-        fetchLocation();
+        fetchLocation().then(() => setLoading(false));
         fetchPontos();
     }, [user?.uid]);
 
@@ -54,20 +54,80 @@ export default function Ponto() {
         const minutosAtual = horarioAtual.getMinutes();
         const horario = HORARIOS[tipoPonto];
         const inicioPermitido = horario.hora;
-        const fimPermitido = inicioPermitido + (horario.tolerancia / 60);
+        const fimPermitido = inicioPermitido + Math.floor(horario.tolerancia / 60);
+        const minutosTolerancia = horario.tolerancia % 60;
 
         if (horaAtual < inicioPermitido) {
-            return { permitido: false, mensagem: "Você só pode bater o ponto às " + inicioPermitido + ":00" };
-        } else if (horaAtual > fimPermitido || (horaAtual === fimPermitido && minutosAtual > 0)) {
-            return { permitido: true, atrasado: true, mensagem: "Você está atrasado" };
+            return { permitido: false, mensagem: `Você só pode bater o ponto às ${inicioPermitido}:00` };
+        } else if (horaAtual > fimPermitido || (horaAtual === fimPermitido && minutosAtual > minutosTolerancia)) {
+            const mensagem = tipoPonto === 'retorno' ? 'Ponto de retorno almoço: você está atrasado' : `Ponto de ${tipoPonto}: você está atrasado`;
+            return { permitido: true, atrasado: true, mensagem };
         }
-        return { permitido: true, atrasado: false, mensagem: "Ponto registrado com sucesso" };
+        return { permitido: true, atrasado: false, mensagem: 'Ponto registrado com sucesso' };
     };
 
-    const handleBaterPonto = async (tipoPonto: TipoPonto) => {
+    const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+        const toRadians = (deg: number) => deg * (Math.PI / 180);
+        const R = 6371e3; // Earth radius in meters
+        const φ1 = toRadians(lat1);
+        const φ2 = toRadians(lat2);
+        const Δφ = toRadians(lat2 - lat1);
+        const Δλ = toRadians(lon2 - lon1);
+
+        const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+                  Math.cos(φ1) * Math.cos(φ2) *
+                  Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+        const distance = R * c; // in meters
+        return distance;
+    };
+
+    const isAtCompanyLocation = (currentLocation: Location.LocationObjectCoords) => {
+        const distance = calculateDistance(
+            currentLocation.latitude,
+            currentLocation.longitude,
+            empresaLatitude,
+            empresaLongitude
+        );
+
+        return distance <= 50; // 50 meters tolerance
+    };
+
+    const handleBaterPonto = async () => {
         if (!location) return;
 
+        if (!isAtCompanyLocation(location.coords)) {
+            Alert.alert("Aviso", "Você precisa estar na localização da empresa para bater o ponto.");
+            return;
+        }
+
         const horarioAtual = new Date();
+        let tipoPonto: TipoPonto;
+
+        if (horarioAtual.getHours() >= 9 && horarioAtual.getHours() < 12) {
+            tipoPonto = 'entrada';
+        } else if (horarioAtual.getHours() === 12) {
+            tipoPonto = 'almoco';
+        } else if (horarioAtual.getHours() >= 14 && horarioAtual.getHours() < 18) {
+            tipoPonto = 'retorno';
+        } else if (horarioAtual.getHours() === 18) {
+            tipoPonto = 'saida';
+        } else {
+            Alert.alert("Aviso", "Horário inválido para bater ponto.");
+            return;
+        }
+
+        const jaBateuPonto = pontos.some(ponto => {
+            const pontoDate = new Date(ponto.horario);
+            return pontoDate.toDateString() === horarioAtual.toDateString() && ponto.type === tipoPonto;
+        });
+
+        if (jaBateuPonto) {
+            Alert.alert("Aviso", "Você já bateu este ponto hoje.");
+            return;
+        }
+
         const { permitido, atrasado, mensagem } = verificarHorarioPermitido(horarioAtual, tipoPonto);
 
         if (!permitido) {
@@ -81,7 +141,7 @@ export default function Ponto() {
             localizacao: location.coords,
             time: horarioAtual,
             type: tipoPonto,
-            atrasado:   atrasado,
+            atrasado: atrasado,
             location: location.coords
         };
 
@@ -90,6 +150,13 @@ export default function Ponto() {
         Alert.alert(atrasado ? "Atraso" : "Sucesso", mensagem);
     };
 
+    if (loading) {
+        return (
+            <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color="#40FF01" />
+            </View>
+        );
+    }
 
     return (
         <View style={styles.container}>
@@ -137,21 +204,12 @@ export default function Ponto() {
                     />
                 )}
             </MapView>
-            <TouchableOpacity onPress={() => handleBaterPonto('entrada')} style={styles.pontoButton}>
-                <Text style={styles.pontoButtonText}>Bater Ponto de Entrada</Text>
+            <TouchableOpacity onPress={handleBaterPonto} style={styles.pontoButton}>
+                <Text style={styles.pontoButtonText}>Bater Ponto</Text>
             </TouchableOpacity>
-            <FlatList
-                data={pontos}
-                keyExtractor={(item) => item.horario}
-                renderItem={({ item }) => (
-                    <View style={styles.pontoContainer}>
-                        <Text style={styles.pontoText}>Horário: {new Date(item.horario).toLocaleString()}</Text>
-                        <Text style={styles.pontoText}>Localização: {item.localizacao.latitude}, {item.localizacao.longitude}</Text>
-                        <Text style={styles.pontoText}>Status: {item.atrasado ? "Atrasado" : "No Horário"}</Text>
-                    </View>
-                )}
-                showsVerticalScrollIndicator={false}
-            />
+            <TouchableOpacity onPress={() => navigation.navigate('PontosBatidos')} style={styles.verPontosButton}>
+                <Text style={styles.verPontosButtonText}>Ver Pontos</Text>
+            </TouchableOpacity>
         </View>
     );
 }
@@ -162,6 +220,11 @@ const styles = StyleSheet.create({
         paddingHorizontal: 20,
         paddingVertical: 80,
         backgroundColor: 'white',
+    },
+    loadingContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     header: {
         flexDirection: 'row',
@@ -209,16 +272,15 @@ const styles = StyleSheet.create({
         color: '#fff',
         fontWeight: 'bold',
     },
-    pontoContainer: {
+    verPontosButton: {
+        backgroundColor: '#000',
         padding: 15,
-        backgroundColor: '#f0f0f0',
         borderRadius: 10,
-        marginBottom: 10,
-        borderWidth: 1,
-        borderColor: '#40FF01',
+        alignItems: 'center',
+        marginTop: 20,
     },
-    pontoText: {
-        fontSize: 16,
-        color: '#555',
+    verPontosButtonText: {
+        color: '#fff',
+        fontWeight: 'bold',
     },
 });

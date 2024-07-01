@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Calendar, DateData } from 'react-native-calendars';
 import { Modalize } from 'react-native-modalize';
@@ -54,10 +54,8 @@ export default function Calendario() {
     }, []);
 
     const handleDayPress = (day: DateData) => {
-        const today = new Date().setHours(0, 0, 0, 0);
-        const selected = new Date(day.timestamp).setHours(0, 0, 0, 0);
-
-        if (selected >= today) {
+        const today = new Date().toISOString().split('T')[0];
+        if (day.dateString >= today) {
             setSelectedDate(day.dateString);
             modalizeRef.current?.open();
         }
@@ -72,19 +70,16 @@ export default function Calendario() {
             time,
             createdAt: new Date(),
         };
-    
+
         try {
-            // Adiciona o evento na coleção de eventos
             await addEvento(newEvent);
-    
-            // Atualiza a interface de eventos
+
             setEvents({
                 ...events,
                 [selectedDate]: { marked: true, dotColor: 'red', events: [...(events[selectedDate]?.events || []), newEvent] }
             });
             setAllEvents([...allEvents, newEvent]);
-    
-            // Adiciona o aviso no Firestore
+
             const newAviso: AvisoDTO = {
                 title,
                 employeeId: employee,
@@ -95,28 +90,26 @@ export default function Calendario() {
                 status: false,
                 completed: false
             };
-    
+
             await addAviso(newAviso);
-    
-            // Atualiza os eventos do cliente no Firestore
+
             if (selectedClient) {
                 const clientDocRef = doc(db, 'clientes', selectedClient);
                 await updateDoc(clientDocRef, {
                     eventos: arrayUnion(newEvent)
                 });
             }
-    
-            // Limpa os campos do formulário
+
             setTitle('');
             setClient('');
             setEmployee('');
             setTime('');
             modalizeRef.current?.close();
+            Alert.alert("Sucesso", "Demanda criada com sucesso");
         } catch (error) {
             console.error('Erro ao adicionar evento:', error);
         }
     };
-    
 
     const openClientPicker = () => {
         clientPickerRef.current?.open();
@@ -171,9 +164,9 @@ export default function Calendario() {
                     <Text style={{ marginLeft: 10, fontSize: 24, fontWeight: "bold", color: "#000" }}>Voltar</Text>
                 </TouchableOpacity>
             </View>
-            
+
             <Text style={styles.title}>Demandas:</Text>
-            
+
             <TouchableOpacity onPress={openClientPicker} style={styles.pickerButton}>
                 <Text style={styles.pickerButtonText}>{selectedClient ? clients.find(c => c.id === selectedClient)?.nome : 'Selecione o Cliente'}</Text>
             </TouchableOpacity>
@@ -227,7 +220,15 @@ export default function Calendario() {
                     <TextInput
                         placeholder="Hora"
                         value={time}
-                        onChangeText={setTime}
+                        onChangeText={text => {
+                            let formatted = text.replace(/[^0-9]/g, '');
+                            if (formatted.length > 2) {
+                                formatted = `${formatted.slice(0, 2)}:${formatted.slice(2, 4)}`;
+                            }
+                            setTime(formatted);
+                        }}
+                        keyboardType="numeric"
+                        maxLength={5}
                         style={styles.input}
                     />
                     <TouchableOpacity onPress={handleAddEvent} style={styles.addButton}>
@@ -321,7 +322,7 @@ const styles = StyleSheet.create({
         flexGrow: 1,
     },
     scrollViewContent: {
-        paddingBottom: 20, // Adiciona espaço para evitar corte
+        paddingBottom: 20,
     },
     eventContainer: {
         padding: 15,

@@ -17,6 +17,7 @@ import Ponto from "../screens/ponto";
 import ReuniaoCliente from "../screens/reuniao";
 import GerenciarAvisos from "../screens/controleAvisos";
 import GerenciarPontos from "../screens/administracao";
+import PontosBatidos from "../screens/pontoBatidos";
 
 const { Navigator, Screen } = createNativeStackNavigator();
 
@@ -122,6 +123,12 @@ export function AppRoutes() {
             <Screen 
             name="GerenciarPontos"
             component={GerenciarPontos}
+            options={{ headerShown: false }} 
+            />
+
+            <Screen 
+            name="PontosBatidos"
+            component={PontosBatidos}
             options={{ headerShown: false }} 
             />
         </Navigator>

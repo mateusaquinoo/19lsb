@@ -4,7 +4,7 @@ export interface PontoDTO {
     id?: string;
     userId: string;
     time: Date;
-    type: 'entrada' | 'saida' | 'almoco' | 'retorno';
+    type: 'entrada' | 'almoco' | 'retorno' | 'saida';
     location: {
         latitude: number;
         longitude: number;
