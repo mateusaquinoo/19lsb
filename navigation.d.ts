@@ -17,6 +17,7 @@ export declare global {
             DemandasFeed: undefined; // Adicione esta linha
             Ponto: undefined; // Adicionei esta 
             GerenciarAvisos: undefined; // Adicionei esta
+            GerenciarPontos: undefined; // Adicionei esta
         }
     }
 }

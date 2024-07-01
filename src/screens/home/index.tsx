@@ -1,194 +1,211 @@
-import { StatusBar } from 'expo-status-bar';
-import { ImageBackground, StyleSheet, Text, TouchableOpacity, View, TextInput, Modal, ScrollView } from 'react-native';
+import React, { useState, useRef } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, Modal, ScrollView, ImageBackground } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import lsb from '../../../assets/TELA-2.png';
-import { useState, useRef } from 'react';
-import { Modalize } from 'react-native-modalize';
-import { auth, db } from '../../../config/firebase';
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from "firebase/auth";
-import { collection, addDoc } from 'firebase/firestore';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { doc, setDoc } from 'firebase/firestore';
+import { auth, db } from '../../../config/firebase';
+import { Modalize } from 'react-native-modalize';
+import lsb from '../../../assets/TELA-2.png'; // Ajuste conforme seu caminho de imagem
 import { Picker } from '@react-native-picker/picker';
 
 export default function Home() {
-  const navigation = useNavigation();
-  const modalizeRef = useRef<Modalize>(null);
-  const loginModalizeRef = useRef<Modalize>(null);
-  const [nome, setNome] = useState('');
-  const [dataNascimento, setDataNascimento] = useState('');
-  const [email, setEmail] = useState('');
-  const [senha, setSenha] = useState('');
-  const [confirmarSenha, setConfirmarSenha] = useState('');
-  const [cargo, setCargo] = useState('');
-  const [pickerVisible, setPickerVisible] = useState(false);
+    const navigation = useNavigation();
+    const modalizeRef = useRef<Modalize>(null);
+    const [nome, setNome] = useState('');
+    const [dataNascimento, setDataNascimento] = useState('');
+    const [email, setEmail] = useState('');
+    const [senha, setSenha] = useState('');
+    const [confirmarSenha, setConfirmarSenha] = useState('');
+    const [cargo, setCargo] = useState('');
+    const [pickerVisible, setPickerVisible] = useState(false);
 
-  const openSignUpModal = () => {
-    modalizeRef.current?.open();
-  };
+    const openSignUpModal = () => {
+        modalizeRef.current?.open();
+    };
 
-  const openLoginModal = () => {
-    loginModalizeRef.current?.open();
-  };
+    const handleSignUp = async () => {
+        if (senha !== confirmarSenha) {
+            alert("As senhas não coincidem");
+            return;
+        }
 
-  const handleSignUp = async () => {
-    if (senha !== confirmarSenha) {
-      alert("As senhas não coincidem");
-      return;
-    }
+        if (!cargo) {
+            alert("Por favor, selecione um cargo");
+            return;
+        }
 
-    if (!cargo) {
-      alert("Por favor, selecione um cargo");
-      return;
-    }
+        try {
+            const userCredential = await createUserWithEmailAndPassword(auth, email, senha);
+            const user = userCredential.user;
 
-    try {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, senha);
-      const user = userCredential.user;
+            await setDoc(doc(db, 'funcionarios', user.uid), {
+                nome,
+                dataNascimento,
+                email,
+                cargo,
+                profileImage: "https://www.pngkey.com/png/full/114-1149878_setting-user-avatar-in-specific-size-without-breaking.png"
+            });
 
-      // Adicionar o usuário à coleção de funcionários
-      await addDoc(collection(db, 'funcionarios'), {
-        employeeId: user.uid, // Adiciona o campo employeeId
-        nome: nome,
-        email: email,
-        dataNascimento: dataNascimento,
-        cargo: cargo,
-      });
+            console.log('Usuário criado com sucesso:', user);
+            navigation.navigate("Feed");
+            modalizeRef.current?.close();
+        } catch (error) {
+            console.error("Erro ao criar conta:", error);
+            alert("Erro ao criar conta. Tente novamente.");
+        }
+    };
 
-      console.log('Usuário criado com sucesso:', user);
+    const handleSignIn = async () => {
+        try {
+            const userCredential = await signInWithEmailAndPassword(auth, email, senha);
+            const user = userCredential.user;
+            console.log('Usuário logado com sucesso:', user);
+            navigation.navigate("Feed");
+        } catch (error) {
+            console.error("Erro ao entrar:", error);
+            alert("Erro ao entrar. Verifique suas credenciais e tente novamente.");
+        }
+    };
 
-      // Salvar o nome do usuário no AsyncStorage
-      await AsyncStorage.setItem('userName', nome);
+    return (
+        <View style={styles.container}>
+            <ImageBackground source={lsb} style={styles.backgroundImage}>
+                <View style={styles.centeredView}>
+                    <TouchableOpacity onPress={openSignUpModal} style={styles.signUpButton}>
+                        <Text style={styles.signUpText}>Cadastre-se</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={handleSignIn} style={styles.signInButton}>
+                        <Text style={styles.signInText}>Entrar</Text>
+                    </TouchableOpacity>
+                </View>
+            </ImageBackground>
 
-      modalizeRef.current?.close();
-    } catch (error) {
-      console.error("Erro ao criar conta:", error);
-    }
-  };
-
-  const handleSignIn = async () => {
-    try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, senha);
-      const user = userCredential.user;
-      console.log('Usuário logado com sucesso:', user);
-      navigation.navigate("Feed");
-      loginModalizeRef.current?.close();
-    } catch (error) {
-      console.error("Erro ao entrar:", error);
-    }
-  };
-
-  return (
-    <View style={{ flex: 1 }}>
-      <ImageBackground source={lsb} style={{ width: '100%', height: '100%' }}>
-        <View style={{ flex: 1, flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
-          <TouchableOpacity onPress={openLoginModal} style={{ backgroundColor: 'white', width: 350, height: 45, borderRadius: 50, marginTop: 100, justifyContent: 'center' }}>
-            <Text style={{ textAlign: 'center', fontSize: 18, fontWeight: 'bold', color: 'black' }}>
-              ENTRAR
-            </Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity onPress={openSignUpModal}>
-            <Text style={{ color: 'white', fontSize: 19, marginTop: 20 }}>
-              Cadastre-se
-            </Text>
-          </TouchableOpacity>
+            <Modalize ref={modalizeRef} adjustToContentHeight>
+                <View style={styles.modalContent}>
+                    <TextInput placeholder="Nome" value={nome} onChangeText={setNome} style={styles.inputField} />
+                    <TextInput placeholder="Data de Nascimento" value={dataNascimento} onChangeText={setDataNascimento} style={styles.inputField} />
+                    <TextInput placeholder="Email" value={email} onChangeText={setEmail} style={styles.inputField} />
+                    <TextInput placeholder="Senha" value={senha} onChangeText={setSenha} secureTextEntry style={styles.inputField} />
+                    <TextInput placeholder="Confirmar Senha" value={confirmarSenha} onChangeText={setConfirmarSenha} secureTextEntry style={styles.inputField} />
+                    <TouchableOpacity onPress={() => setPickerVisible(true)} style={styles.pickerButton}>
+                        <Text style={styles.pickerButtonText}>{cargo || 'Selecione o Cargo'}</Text>
+                    </TouchableOpacity>
+                    <Modal
+                        visible={pickerVisible}
+                        transparent={true}
+                        animationType="slide"
+                        onRequestClose={() => setPickerVisible(false)}
+                    >
+                        <View style={styles.pickerModal}>
+                            <Picker
+                                selectedValue={cargo}
+                                onValueChange={(itemValue) => {
+                                    setCargo(itemValue);
+                                }}
+                                style={styles.picker}
+                            >
+                                <Picker.Item label="Designer" value="Designer" />
+                                <Picker.Item label="Gestor de Tráfego" value="Gestor de Tráfego" />
+                                <Picker.Item label="Editor de Vídeos" value="Editor de Vídeos" />
+                                <Picker.Item label="Programador" value="Programador" />
+                                <Picker.Item label="Administração" value="Administração" />
+                            </Picker>
+                            <TouchableOpacity style={styles.closePickerButton} onPress={() => setPickerVisible(false)}>
+                                <Text style={styles.closePickerButtonText}>Fechar</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </Modal>
+                    <TouchableOpacity onPress={handleSignUp} style={styles.submitButton}>
+                        <Text style={styles.submitButtonText}>Cadastrar</Text>
+                    </TouchableOpacity>
+                </View>
+            </Modalize>
         </View>
-      </ImageBackground>
-      
-      <Modalize ref={modalizeRef} adjustToContentHeight>
-        <View style={{ padding: 20 }}>
-          <Text style={{ fontSize: 20, fontWeight: 'bold', marginBottom: 20 }}>Cadastro</Text>
-          <TextInput
-            placeholder="Nome"
-            value={nome}
-            onChangeText={setNome}
-            style={{ borderWidth: 1, marginBottom: 10, padding: 10, borderRadius: 5 }}
-          />
-          <TextInput
-            placeholder="Data de Nascimento"
-            value={dataNascimento}
-            onChangeText={setDataNascimento}
-            style={{ borderWidth: 1, marginBottom: 10, padding: 10, borderRadius: 5 }}
-          />
-          <TextInput
-            placeholder="Email"
-            value={email}
-            onChangeText={setEmail}
-            style={{ borderWidth: 1, marginBottom: 10, padding: 10, borderRadius: 5 }}
-          />
-          <TextInput
-            placeholder="Senha"
-            value={senha}
-            onChangeText={setSenha}
-            secureTextEntry
-            style={{ borderWidth: 1, marginBottom: 10, padding: 10, borderRadius: 5 }}
-          />
-          <TextInput
-            placeholder="Confirmar Senha"
-            value={confirmarSenha}
-            onChangeText={setConfirmarSenha}
-            secureTextEntry
-            style={{ borderWidth: 1, marginBottom: 20, padding: 10, borderRadius: 5 }}
-          />
-          <TouchableOpacity
-            onPress={() => setPickerVisible(true)}
-            style={{ borderWidth: 1, marginBottom: 20, padding: 10, borderRadius: 5, justifyContent: 'center', alignItems: 'center', backgroundColor: '#f0f0f0' }}
-          >
-            <Text style={{ color: '#555' }}>{cargo || 'Selecione o Cargo'}</Text>
-          </TouchableOpacity>
-          <Modal
-            visible={pickerVisible}
-            transparent={true}
-            animationType="slide"
-          >
-            <View style={{ flex: 1, justifyContent: 'flex-end' }}>
-              <View style={{ backgroundColor: 'white', padding: 20, borderTopLeftRadius: 20, borderTopRightRadius: 20 }}>
-                <ScrollView>
-                  <Picker
-                    selectedValue={cargo}
-                    onValueChange={(itemValue) => {
-                      setCargo(itemValue);
-                      setPickerVisible(false);
-                    }}
-                  >
-                    <Picker.Item label="Selecione o Cargo" value="" />
-                    <Picker.Item label="Designer" value="Designer" />
-                    <Picker.Item label="Gestor de Tráfego" value="Gestor de Tráfego" />
-                    <Picker.Item label="Editor de Vídeos" value="Editor de Vídeos" />
-                    <Picker.Item label="Programador" value="Programador" />
-                    <Picker.Item label="Administração" value="Administração" />
-                  </Picker>
-                </ScrollView>
-              </View>
-            </View>
-          </Modal>
-          <TouchableOpacity onPress={handleSignUp} style={{ backgroundColor: '#40FF01', padding: 15, borderRadius: 10 }}>
-            <Text style={{ textAlign: 'center', color: '#fff', fontWeight: 'bold' }}>Cadastrar</Text>
-          </TouchableOpacity>
-        </View>
-      </Modalize>
-
-      <Modalize ref={loginModalizeRef} adjustToContentHeight>
-        <View style={{ padding: 20 }}>
-          <Text style={{ fontSize: 20, fontWeight: 'bold', marginBottom: 20 }}>Entrar</Text>
-          <TextInput
-            placeholder="Email"
-            value={email}
-            onChangeText={setEmail}
-            style={{ borderWidth: 1, marginBottom: 10, padding: 10, borderRadius: 5 }}
-          />
-          <TextInput
-            placeholder="Senha"
-            value={senha}
-            onChangeText={setSenha}
-            secureTextEntry
-            style={{ borderWidth: 1, marginBottom: 20, padding: 10, borderRadius: 5 }}
-          />
-          <TouchableOpacity onPress={handleSignIn} style={{ backgroundColor: '#40FF01', padding: 15, borderRadius: 10 }}>
-            <Text style={{ textAlign: 'center', color: '#fff', fontWeight: 'bold' }}>Entrar</Text>
-          </TouchableOpacity>
-        </View>
-      </Modalize>
-    </View>
-  );
+    );
 }
+
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+    },
+    backgroundImage: {
+        width: '100%',
+        height: '100%',
+    },
+    centeredView: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    signUpButton: {
+        backgroundColor: 'white',
+        width: 350,
+        height: 45,
+        borderRadius: 50,
+        justifyContent: 'center',
+        marginTop: 100,
+    },
+    signUpText: {
+        textAlign: 'center',
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: 'black',
+    },
+    signInButton: {
+        backgroundColor: 'transparent',
+        marginTop: 20,
+    },
+    signInText: {
+        color: 'white',
+        fontSize: 19,
+    },
+    modalContent: {
+        padding: 20,
+    },
+    inputField: {
+        borderWidth: 1,
+        marginBottom: 10,
+        padding: 10,
+        borderRadius: 5,
+    },
+    pickerButton: {
+        borderWidth: 1,
+        marginBottom: 20,
+        padding: 10,
+        borderRadius: 5,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: '#f0f0f0',
+    },
+    pickerButtonText: {
+        color: '#555',
+    },
+    pickerModal: {
+        backgroundColor: 'white',
+        padding: 20,
+        borderTopLeftRadius: 20,
+        borderTopRightRadius: 20,
+    },
+    picker: {
+        width: '100%',
+    },
+    closePickerButton: {
+        padding: 10,
+        alignItems: 'center',
+        backgroundColor: '#ccc',
+    },
+    closePickerButtonText: {
+        color: 'black',
+        fontSize: 16,
+    },
+    submitButton: {
+        backgroundColor: '#40FF01',
+        padding: 15,
+        borderRadius: 10,
+    },
+    submitButtonText: {
+        textAlign: 'center',
+        color: '#fff',
+        fontWeight: 'bold',
+    },
+});

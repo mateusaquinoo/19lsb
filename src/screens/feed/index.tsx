@@ -22,21 +22,19 @@ export default function Feed() {
         const getUserProfile = async () => {
             const user = auth.currentUser;
             if (user) {
-                const q = query(collection(db, 'funcionarios'), where('id', '==', user.uid));
-                const querySnapshot = await getDocs(q);
-                if (!querySnapshot.empty) {
-                    const userData = querySnapshot.docs[0].data();
+                const docRef = doc(db, 'funcionarios', user.uid);
+                const docSnap = await getDoc(docRef);
+    
+                if (docSnap.exists()) {
+                    const userData = docSnap.data();
                     setFirstName(userData.nome || '');
-                    setProfileImage(userData.profileImage || profileImage);
+                    setProfileImage(userData.profileImage || "https://www.pngkey.com/png/full/114-1149878_setting-user-avatar-in-specific-size-without-breaking.png");
                 } else {
-                    // Se o documento não existe, cria um novo documento com dados padrão
-                    await setDoc(doc(db, 'funcionarios', user.uid), {
-                        nome: '',
-                        profileImage: profileImage
-                    });
+                    console.log("No such document!");
                 }
             }
         };
+    
         getUserProfile();
     }, []);
 
@@ -502,6 +500,64 @@ export default function Feed() {
                                     }}
                                 >
                                     Ponto
+                                </Text>
+                            </View>
+                            <Ionicons name="chevron-forward" size={14} color="#000" />
+                        </View>
+                    </TouchableOpacity>
+                </View>
+                <View
+                    style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        marginTop: 20,
+                    }}
+                >
+                    <TouchableOpacity
+                        onPress={() => navigation.navigate("GerenciarPontos")}
+                        style={{
+                            display: "flex",
+                            flexDirection: "row",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            width: "100%",
+                            borderRadius: 10,
+                            backgroundColor: "#BDBCBB",
+                        }}
+                    >
+                        <View
+                            style={{
+                                paddingVertical: 20,
+                                paddingRight: 20,
+                                marginLeft: 20,
+                                display: "flex",
+                                width: Dimensions.get("window").width - 60,
+                                justifyContent: "space-between",
+                                alignItems: "center",
+                                flexDirection: "row",
+                            }}
+                        >
+                            <View
+                                style={{
+                                    display: "flex",
+                                    flexDirection: "row",
+                                    alignItems: "center",
+                                }}
+                            >
+                                <MaterialCommunityIcons
+                                    name="map-marker-radius-outline"
+                                    size={24}
+                                    color="#40FF01"
+                                />
+                                <Text
+                                    style={{
+                                        marginLeft: 10,
+                                        fontSize: 16,
+                                        color: "#000",
+                                    }}
+                                >
+                                    ADM
                                 </Text>
                             </View>
                             <Ionicons name="chevron-forward" size={14} color="#000" />

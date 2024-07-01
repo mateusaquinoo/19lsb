@@ -8,8 +8,8 @@ export const addPonto = async (ponto: PontoDTO) => {
     await addDoc(pontosCollection, ponto);
 };
 
-export const getPontos = async (userId: string) => {
-    const q = query(pontosCollection, where('userId', '==', userId));
+export const getPontos = async (userId: string): Promise<PontoDTO[]> => {
+    const q = query(collection(db, 'pontos'), where('userId', '==', userId));
     const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as PontoDTO[];
+    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() as PontoDTO }));
 };

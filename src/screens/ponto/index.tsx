@@ -9,8 +9,17 @@ import { PontoDTO } from '../../../firestore/Ponto/pontoDTO';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { FlatList } from 'react-native-gesture-handler';
 
-const empresaLatitude = -16.7063946; // Substitua pela latitude da empresa
-const empresaLongitude = -49.2382167; // Substitua pela longitude da empresa
+const empresaLatitude = -16.7063946;
+const empresaLongitude = -49.2382167;
+
+type TipoPonto = 'entrada' | 'almoco' | 'retorno' | 'saida';
+
+const HORARIOS = {
+    entrada: { hora: 9, tolerancia: 15 },
+    almoco: { hora: 12, tolerancia: 0 },
+    retorno: { hora: 14, tolerancia: 15 },
+    saida: { hora: 18, tolerancia: 0 }
+};
 
 export default function Ponto() {
     const navigation = useNavigation();
@@ -25,7 +34,6 @@ export default function Ponto() {
                 Alert.alert('Permissão de localização negada');
                 return;
             }
-
             let location = await Location.getCurrentPositionAsync({});
             setLocation(location);
         };
@@ -41,56 +49,47 @@ export default function Ponto() {
         fetchPontos();
     }, [user?.uid]);
 
-    const handleBaterPonto = async () => {
+    const verificarHorarioPermitido = (horarioAtual: Date, tipoPonto: TipoPonto) => {
+        const horaAtual = horarioAtual.getHours();
+        const minutosAtual = horarioAtual.getMinutes();
+        const horario = HORARIOS[tipoPonto];
+        const inicioPermitido = horario.hora;
+        const fimPermitido = inicioPermitido + (horario.tolerancia / 60);
+
+        if (horaAtual < inicioPermitido) {
+            return { permitido: false, mensagem: "Você só pode bater o ponto às " + inicioPermitido + ":00" };
+        } else if (horaAtual > fimPermitido || (horaAtual === fimPermitido && minutosAtual > 0)) {
+            return { permitido: true, atrasado: true, mensagem: "Você está atrasado" };
+        }
+        return { permitido: true, atrasado: false, mensagem: "Ponto registrado com sucesso" };
+    };
+
+    const handleBaterPonto = async (tipoPonto: TipoPonto) => {
         if (!location) return;
 
-        const distance = getDistanceFromLatLonInKm(
-            empresaLatitude,
-            empresaLongitude,
-            location.coords.latitude,
-            location.coords.longitude
-        );
+        const horarioAtual = new Date();
+        const { permitido, atrasado, mensagem } = verificarHorarioPermitido(horarioAtual, tipoPonto);
 
-        if (distance > 0.1) { // Considerando 100 metros como limite para bater o ponto
-            Alert.alert('Você está fora do alcance da empresa para bater o ponto');
+        if (!permitido) {
+            Alert.alert("Aviso", mensagem);
             return;
         }
 
         const novoPonto: PontoDTO = {
             userId: user?.uid ?? '',
-            horario: new Date().toISOString(),
-            localizacao: {
-                latitude: location.coords.latitude,
-                longitude: location.coords.longitude,
-            },
-            time: new Date(),
-            type: 'entrada',
-            location: {
-                latitude: 0,
-                longitude: 0
-            }
+            horario: horarioAtual.toISOString(),
+            localizacao: location.coords,
+            time: horarioAtual,
+            type: tipoPonto,
+            atrasado:   atrasado,
+            location: location.coords
         };
 
         await addPonto(novoPonto);
         setPontos([...pontos, novoPonto]);
+        Alert.alert(atrasado ? "Atraso" : "Sucesso", mensagem);
     };
 
-    function getDistanceFromLatLonInKm(lat1: number, lon1: number, lat2: number, lon2: number) {
-        const R = 6371; // Raio da Terra em km
-        const dLat = deg2rad(lat2 - lat1);
-        const dLon = deg2rad(lon2 - lon1);
-        const a =
-            Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-            Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) *
-            Math.sin(dLon / 2) * Math.sin(dLon / 2);
-        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-        const d = R * c; // Distância em km
-        return d;
-    }
-
-    function deg2rad(deg: number) {
-        return deg * (Math.PI / 180);
-    }
 
     return (
         <View style={styles.container}>
@@ -138,8 +137,8 @@ export default function Ponto() {
                     />
                 )}
             </MapView>
-            <TouchableOpacity onPress={handleBaterPonto} style={styles.pontoButton}>
-                <Text style={styles.pontoButtonText}>Bater Ponto</Text>
+            <TouchableOpacity onPress={() => handleBaterPonto('entrada')} style={styles.pontoButton}>
+                <Text style={styles.pontoButtonText}>Bater Ponto de Entrada</Text>
             </TouchableOpacity>
             <FlatList
                 data={pontos}
@@ -148,6 +147,7 @@ export default function Ponto() {
                     <View style={styles.pontoContainer}>
                         <Text style={styles.pontoText}>Horário: {new Date(item.horario).toLocaleString()}</Text>
                         <Text style={styles.pontoText}>Localização: {item.localizacao.latitude}, {item.localizacao.longitude}</Text>
+                        <Text style={styles.pontoText}>Status: {item.atrasado ? "Atrasado" : "No Horário"}</Text>
                     </View>
                 )}
                 showsVerticalScrollIndicator={false}
@@ -189,8 +189,6 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         marginBottom: 10,
         color: '#000',
-        textAlign: 'center',
-        marginTop: 20,
     },
     map: {
         width: '100%',
