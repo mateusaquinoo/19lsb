@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Alert, ActivityIndicator } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Calendar, DateData } from 'react-native-calendars';
 import { Modalize } from 'react-native-modalize';
@@ -11,6 +11,10 @@ import { addEvento, getEventos } from '../../../firestore/Calendario/eventoContr
 import { EventoDTO } from '../../../firestore/Calendario/eventoDTO';
 import { addAviso } from '../../../firestore/Avisos/avisoController';
 import { AvisoDTO } from '../../../firestore/Avisos/avisoDTO';
+import * as DocumentPicker from 'expo-document-picker';
+import * as ImagePicker from 'expo-image-picker';
+import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
+import { storage } from '../../../config/firebase';
 
 export default function Calendario() {
     const navigation = useNavigation();
@@ -27,6 +31,8 @@ export default function Calendario() {
     const modalizeRef = useRef<Modalize>(null);
     const clientPickerRef = useRef<Modalize>(null);
     const employeePickerRef = useRef<Modalize>(null);
+    const [fileUri, setFileUri] = useState('');
+    const [uploading, setUploading] = useState(false);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -62,6 +68,12 @@ export default function Calendario() {
     };
 
     const handleAddEvent = async () => {
+        if (!fileUri) {
+            Alert.alert('Erro', 'Por favor, selecione um arquivo ou imagem.');
+            return;
+        }
+
+        setUploading(true);
         const newEvent: EventoDTO = {
             title,
             client: selectedClient || '',
@@ -69,45 +81,106 @@ export default function Calendario() {
             date: selectedDate,
             time,
             createdAt: new Date(),
+            fileUri,
         };
 
         try {
-            await addEvento(newEvent);
+            const fileName = fileUri.split('/').pop();
+            const response = await fetch(fileUri);
+            const blob = await response.blob();
+            const storageRef = ref(storage, `eventos/${fileName}`);
+            const uploadTask = uploadBytesResumable(storageRef, blob);
 
-            setEvents({
-                ...events,
-                [selectedDate]: { marked: true, dotColor: 'red', events: [...(events[selectedDate]?.events || []), newEvent] }
-            });
-            setAllEvents([...allEvents, newEvent]);
+            uploadTask.on(
+                'state_changed',
+                (snapshot) => {
+                    const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                    console.log(`Upload is ${progress}% done`);
+                },
+                (error) => {
+                    console.error('Upload error:', error);
+                    Alert.alert('Erro', 'Ocorreu um erro ao fazer o upload do arquivo. Tente novamente.');
+                    setUploading(false);
+                },
+                async () => {
+                    const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+                    newEvent.fileUri = downloadURL;
 
-            const newAviso: AvisoDTO = {
-                title,
-                employeeId: employee,
-                date: selectedDate,
-                time,
-                createdAt: new Date(),
-                client: clients.find(c => c.id === selectedClient)?.nome || '',
-                status: false,
-                completed: false
-            };
+                    await addEvento(newEvent);
 
-            await addAviso(newAviso);
+                    setEvents({
+                        ...events,
+                        [selectedDate]: { marked: true, dotColor: 'red', events: [...(events[selectedDate]?.events || []), newEvent] }
+                    });
+                    setAllEvents([...allEvents, newEvent]);
 
-            if (selectedClient) {
-                const clientDocRef = doc(db, 'clientes', selectedClient);
-                await updateDoc(clientDocRef, {
-                    eventos: arrayUnion(newEvent)
-                });
-            }
+                    const newAviso: AvisoDTO = {
+                        title,
+                        employeeId: employee,
+                        date: selectedDate,
+                        time,
+                        createdAt: new Date(),
+                        client: clients.find(c => c.id === selectedClient)?.nome || '',
+                        status: false,
+                        completed: false,
+                        fileUri,
+                    };
 
-            setTitle('');
-            setClient('');
-            setEmployee('');
-            setTime('');
-            modalizeRef.current?.close();
-            Alert.alert("Sucesso", "Demanda criada com sucesso");
+                    await addAviso(newAviso);
+
+                    if (selectedClient) {
+                        const clientDocRef = doc(db, 'clientes', selectedClient);
+                        await updateDoc(clientDocRef, {
+                            eventos: arrayUnion(newEvent)
+                        });
+                    }
+
+                    setTitle('');
+                    setClient('');
+                    setEmployee('');
+                    setTime('');
+                    setFileUri('');
+                    setUploading(false);
+                    modalizeRef.current?.close();
+                    Alert.alert("Sucesso", "Evento criado com sucesso");
+                }
+            );
         } catch (error) {
             console.error('Erro ao adicionar evento:', error);
+        }
+    };
+
+    const pickFileOrImage = async () => {
+        Alert.alert(
+            "Selecionar tipo de arquivo",
+            "Escolha se deseja enviar um documento ou uma imagem.",
+            [
+                { text: "Documento", onPress: () => pickDocument() },
+                { text: "Imagem", onPress: () => pickImage() }
+            ],
+            { cancelable: true }
+        );
+    };
+
+    const pickDocument = async () => {
+        let result: any= await DocumentPicker.getDocumentAsync({ type: '*/*' });
+        if (result.type === 'success') {
+            console.log('Document selected:', result.uri);
+            setFileUri(result.uri);
+        }
+    };
+
+    const pickImage = async () => {
+        let result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ImagePicker.MediaTypeOptions.All,
+            allowsEditing: true,
+            aspect: [4, 3],
+            quality: 1,
+        });
+        if (!result.canceled && result.assets && result.assets.length > 0) {
+            const { uri } = result.assets[0];
+            console.log('Image selected:', uri);
+            setFileUri(uri);
         }
     };
 
@@ -231,6 +304,13 @@ export default function Calendario() {
                         maxLength={5}
                         style={styles.input}
                     />
+                    <TouchableOpacity onPress={pickFileOrImage} style={styles.pickerButton}>
+                        {uploading ? (
+                            <ActivityIndicator size="small" color="#0000ff" />
+                        ) : (
+                            <Text style={styles.pickerButtonText}>Selecionar Arquivo/Imagem</Text>
+                        )}
+                    </TouchableOpacity>
                     <TouchableOpacity onPress={handleAddEvent} style={styles.addButton}>
                         <Text style={styles.addButtonText}>Adicionar</Text>
                     </TouchableOpacity>

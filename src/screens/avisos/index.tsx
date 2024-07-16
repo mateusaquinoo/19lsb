@@ -5,6 +5,8 @@ import { getAvisosByEmployee, updateAvisoStatus } from '../../../firestore/Aviso
 import { AvisoDTO } from '../../../firestore/Avisos/avisoDTO';
 import { useAuth } from '../../auth/AuthProvider';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { storage } from '../../../config/firebase';
 
 export default function Avisos() {
     const navigation = useNavigation();
@@ -40,6 +42,50 @@ export default function Avisos() {
         return `${day}/${month}/${year}`;
     };
 
+    const handleViewFile = async (fileUri: string) => {
+        if (fileUri.startsWith('file://')) {
+            try {
+                const response = await fetch(fileUri);
+                const blob = await response.blob();
+                const fileName = fileUri.split('/').pop();
+                const storageRef = ref(storage, `uploads/${fileName}`);
+                await uploadBytes(storageRef, blob);
+                const downloadURL = await getDownloadURL(storageRef);
+                navigation.navigate('VisualizarArquivo', { uri: downloadURL, tipo: 'application/pdf' });
+            } catch (error) {
+                console.error("Erro ao fazer upload do arquivo:", error);
+                Alert.alert('Erro', 'Não foi possível abrir o arquivo.');
+            }
+        } else {
+            navigation.navigate('VisualizarArquivo', { uri: fileUri, tipo: 'application/pdf' });
+        }
+    };
+
+    const renderAviso = ({ item }: { item: AvisoDTO }) => (
+        <View style={styles.avisoContainer}>
+            <Text style={styles.avisoTitle}>Título: {item.title}</Text>
+            <Text style={styles.avisoDetails}>Cliente: {item.client}</Text>
+            <Text style={styles.avisoDetails}>Data: {formatDate(item.date)}</Text>
+            <Text style={styles.avisoDetails}>Hora: {item.time}</Text>
+            {item.fileUri && (
+                <TouchableOpacity
+                    style={styles.viewFileButton}
+                    onPress={() => handleViewFile(item.fileUri || '')}
+                >
+                    <Text style={styles.viewFileButtonText}>Ver Arquivo</Text>
+                </TouchableOpacity>
+            )}
+            {!item.completed && (
+                <TouchableOpacity
+                    onPress={() => handleConcluirAviso(item.id ?? '')}
+                    style={styles.concluirButton}
+                >
+                    <Text style={styles.concluirButtonText}>Concluir</Text>
+                </TouchableOpacity>
+            )}
+        </View>
+    );
+
     return (
         <View style={styles.container}>
             <View style={styles.header}>
@@ -52,23 +98,9 @@ export default function Avisos() {
             <FlatList
                 data={avisos}
                 keyExtractor={item => item.id ?? ''}
-                renderItem={({ item }) => (
-                    <View style={styles.avisoContainer}>
-                        <Text style={styles.avisoTitle}>Título: {item.title}</Text>
-                        <Text style={styles.avisoDetails}>Cliente: {item.client}</Text>
-                        <Text style={styles.avisoDetails}>Data: {formatDate(item.date)}</Text>
-                        <Text style={styles.avisoDetails}>Hora: {item.time}</Text>
-                        {!item.completed && (
-                            <TouchableOpacity
-                                onPress={() => handleConcluirAviso(item.id ?? '')}
-                                style={styles.concluirButton}
-                            >
-                                <Text style={styles.concluirButtonText}>Concluir</Text>
-                            </TouchableOpacity>
-                        )}
-                    </View>
-                )}
+                renderItem={renderAviso}
                 showsVerticalScrollIndicator={false}
+                ListEmptyComponent={<Text style={styles.noAvisoText}>Nenhum aviso encontrado.</Text>}
             />
         </View>
     );
@@ -120,6 +152,21 @@ const styles = StyleSheet.create({
         fontSize: 16,
         color: '#555',
     },
+    viewFileButton: {
+        marginTop: 10,
+        padding: 10,
+        borderRadius: 5,
+        borderWidth: 1,
+        borderColor: '#40FF01',
+        backgroundColor: '#999',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    viewFileButtonText: {
+        color: '#fff',
+        fontSize: 16,
+        fontWeight: 'bold',
+    },
     concluirButton: {
         marginTop: 10,
         backgroundColor: '#40FF01',
@@ -130,5 +177,11 @@ const styles = StyleSheet.create({
     concluirButtonText: {
         color: '#fff',
         fontWeight: 'bold',
+    },
+    noAvisoText: {
+        fontSize: 16,
+        color: '#555',
+        textAlign: 'center',
+        marginTop: 20,
     },
 });

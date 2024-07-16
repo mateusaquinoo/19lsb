@@ -7,4 +7,5 @@ export interface EventoDTO {
     employee: string;
     date: string;
     createdAt: Date;
+    fileUri: string;
 }

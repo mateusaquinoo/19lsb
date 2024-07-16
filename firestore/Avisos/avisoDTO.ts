@@ -9,4 +9,5 @@ export interface AvisoDTO {
     date: string;
     time: string;
     createdAt: Date;
+    fileUri: string;
 }
