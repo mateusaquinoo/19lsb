@@ -5,7 +5,7 @@ import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from "fire
 import { doc, setDoc } from 'firebase/firestore';
 import { auth, db } from '../../../config/firebase';
 import { Modalize } from 'react-native-modalize';
-import lsb from '../../../assets/TELA-2.png'; // Ajuste conforme seu caminho de imagem
+import lsb from '../../../assets/testetela.jpg';
 import { Picker } from '@react-native-picker/picker';
 import { TextInputMask } from 'react-native-masked-text';
 
