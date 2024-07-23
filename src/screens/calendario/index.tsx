@@ -68,11 +68,6 @@ export default function Calendario() {
     };
 
     const handleAddEvent = async () => {
-        if (!fileUri) {
-            Alert.alert('Erro', 'Por favor, selecione um arquivo ou imagem.');
-            return;
-        }
-
         setUploading(true);
         const newEvent: EventoDTO = {
             title,
@@ -84,69 +79,81 @@ export default function Calendario() {
             fileUri,
         };
 
-        try {
-            const fileName = fileUri.split('/').pop();
-            const response = await fetch(fileUri);
-            const blob = await response.blob();
-            const storageRef = ref(storage, `eventos/${fileName}`);
-            const uploadTask = uploadBytesResumable(storageRef, blob);
+        const saveEvent = async (fileUri: string) => {
+            newEvent.fileUri = fileUri;
 
-            uploadTask.on(
-                'state_changed',
-                (snapshot) => {
-                    const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-                    console.log(`Upload is ${progress}% done`);
-                },
-                (error) => {
-                    console.error('Upload error:', error);
-                    Alert.alert('Erro', 'Ocorreu um erro ao fazer o upload do arquivo. Tente novamente.');
-                    setUploading(false);
-                },
-                async () => {
-                    const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-                    newEvent.fileUri = downloadURL;
+            await addEvento(newEvent);
 
-                    await addEvento(newEvent);
+            setEvents({
+                ...events,
+                [selectedDate]: { marked: true, dotColor: 'red', events: [...(events[selectedDate]?.events || []), newEvent] }
+            });
+            setAllEvents([...allEvents, newEvent]);
 
-                    setEvents({
-                        ...events,
-                        [selectedDate]: { marked: true, dotColor: 'red', events: [...(events[selectedDate]?.events || []), newEvent] }
-                    });
-                    setAllEvents([...allEvents, newEvent]);
+            const newAviso: AvisoDTO = {
+                title,
+                employeeId: employee,
+                date: selectedDate,
+                time,
+                createdAt: new Date(),
+                client: clients.find(c => c.id === selectedClient)?.nome || '',
+                status: false,
+                completed: false,
+                fileUri,
+            };
 
-                    const newAviso: AvisoDTO = {
-                        title,
-                        employeeId: employee,
-                        date: selectedDate,
-                        time,
-                        createdAt: new Date(),
-                        client: clients.find(c => c.id === selectedClient)?.nome || '',
-                        status: false,
-                        completed: false,
-                        fileUri,
-                    };
+            await addAviso(newAviso);
 
-                    await addAviso(newAviso);
+            if (selectedClient) {
+                const clientDocRef = doc(db, 'clientes', selectedClient);
+                await updateDoc(clientDocRef, {
+                    eventos: arrayUnion(newEvent)
+                });
+            }
 
-                    if (selectedClient) {
-                        const clientDocRef = doc(db, 'clientes', selectedClient);
-                        await updateDoc(clientDocRef, {
-                            eventos: arrayUnion(newEvent)
-                        });
-                    }
+            setTitle('');
+            setClient('');
+            setEmployee('');
+            setTime('');
+            setFileUri('');
+            setUploading(false);
+            modalizeRef.current?.close();
+            Alert.alert("Sucesso", "Evento criado com sucesso");
+        };
 
-                    setTitle('');
-                    setClient('');
-                    setEmployee('');
-                    setTime('');
-                    setFileUri('');
-                    setUploading(false);
-                    modalizeRef.current?.close();
-                    Alert.alert("Sucesso", "Evento criado com sucesso");
+        if (fileUri) {
+            try {
+                const fileName = fileUri.split('/').pop();
+                const response = await fetch(fileUri);
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
                 }
-            );
-        } catch (error) {
-            console.error('Erro ao adicionar evento:', error);
+                const blob = await response.blob();
+                const storageRef = ref(storage, `eventos/${fileName}`);
+                const uploadTask = uploadBytesResumable(storageRef, blob);
+
+                uploadTask.on(
+                    'state_changed',
+                    (snapshot) => {
+                        const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                        console.log(`Upload is ${progress}% done`);
+                    },
+                    (error) => {
+                        console.error('Upload error:', error);
+                        Alert.alert('Erro', 'Ocorreu um erro ao fazer o upload do arquivo. Tente novamente.');
+                        setUploading(false);
+                    },
+                    async () => {
+                        const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+                        await saveEvent(downloadURL);
+                    }
+                );
+            } catch (error) {
+                console.error('Erro ao adicionar evento:', error);
+                setUploading(false);
+            }
+        } else {
+            await saveEvent('');
         }
     };
 
@@ -163,10 +170,13 @@ export default function Calendario() {
     };
 
     const pickDocument = async () => {
-        let result: any= await DocumentPicker.getDocumentAsync({ type: '*/*' });
-        if (result.type === 'success') {
-            console.log('Document selected:', result.uri);
-            setFileUri(result.uri);
+        let result = await DocumentPicker.getDocumentAsync({ type: '*/*' });
+        if (!result.canceled && result.assets && result.assets.length > 0) {
+            const { uri } = result.assets[0];
+            console.log('Document selected:', uri);
+            setFileUri(uri);
+        } else {
+            console.log('Document picker canceled', result);
         }
     };
 
@@ -181,6 +191,8 @@ export default function Calendario() {
             const { uri } = result.assets[0];
             console.log('Image selected:', uri);
             setFileUri(uri);
+        } else {
+            console.log('Image picker canceled', result);
         }
     };
 
