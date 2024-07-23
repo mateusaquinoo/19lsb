@@ -133,17 +133,18 @@ export default function RelatoriosCliente() {
     };
 
     const pickDocument = async () => {
-        let result: any = await DocumentPicker.getDocumentAsync({ type: "*/*" });
-        if (result.type === 'success') {
-            console.log('Document selected:', result.uri);
-            await uploadFile(result.uri, result.name);
+        const result = await DocumentPicker.getDocumentAsync({ type: "*/*" });
+        if (!result.canceled && result.assets && result.assets.length > 0) {
+            const { uri, name } = result.assets[0];
+            console.log('Document selected:', uri);
+            await uploadFile(uri, name);
         } else {
-            console.log('Document picker canceled');
+            console.log('Document picker canceled', result);
         }
     };
 
     const pickImage = async () => {
-        let result = await ImagePicker.launchImageLibraryAsync({
+        const result = await ImagePicker.launchImageLibraryAsync({
             mediaTypes: ImagePicker.MediaTypeOptions.Images,
             allowsEditing: true,
             aspect: [4, 3],
@@ -154,7 +155,7 @@ export default function RelatoriosCliente() {
             console.log('Image selected:', imageUri);
             await uploadFile(imageUri, imageUri.split('/').pop() || 'image');
         } else {
-            console.log('Image picker canceled');
+            console.log('Image picker canceled', result);
         }
     };
 
@@ -163,6 +164,9 @@ export default function RelatoriosCliente() {
         try {
             console.log('Uploading file:', uri);
             const response = await fetch(uri);
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
             const blob = await response.blob();
             const storageRef = ref(storage, `relatorios/${name}`);
             const uploadTask = uploadBytesResumable(storageRef, blob);
